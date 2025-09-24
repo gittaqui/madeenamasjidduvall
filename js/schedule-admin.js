@@ -186,8 +186,15 @@
       const resp = await fetch('/api/prayer-times',{
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        credentials: 'include', // ensure auth cookies sent so admin role recognized
+        cache: 'no-store'
       });
+      if(resp.status === 307){
+        // Simulator sometimes returns temporary redirect to login
+        location.href = '/.auth/login/aad?post_login_redirect_uri=/admin-schedule.html';
+        return;
+      }
       if(resp.status === 401){
         // Not authenticated for admin role – redirect to login
         location.href = '/.auth/login/aad?post_login_redirect_uri=/admin-schedule.html';
