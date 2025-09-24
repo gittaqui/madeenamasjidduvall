@@ -1,13 +1,19 @@
 module.exports = async function (context, req) {
-  // Echo decoded principal if present
-  let principal = null;
   try {
-    const b64 = req.headers['x-ms-client-principal'];
-    if (b64) {
-      principal = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+    const header = req.headers['x-ms-client-principal'];
+    let principal = null;
+    let decodeError = null;
+    if (header) {
+      try {
+        principal = JSON.parse(Buffer.from(header, 'base64').toString('utf8'));
+      } catch (e) {
+        decodeError = e.message;
+        context.log('Failed to decode principal header', e);
+      }
     }
-  } catch (e) {
-    context.log('Failed to parse principal', e.message);
+    context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: { ok: true, hasHeader: !!header, decodeError, principal, envBypass: process.env.DEV_ALLOW_NON_ADMIN === '1' } };
+  } catch (err) {
+    context.log('Unexpected /api/me error', err);
+    context.res = { status: 500, headers: { 'Content-Type': 'application/json' }, body: { ok: false, error: err.message, stack: err.stack } };
   }
-  context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: { principal } };
 };
