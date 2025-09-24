@@ -229,7 +229,7 @@
         const firstC = firstNameOf(cachedPrincipal.userDetails||cachedPrincipal.identityProvider||'');
         authStatusEl.textContent = rolesC.includes('admin') ? `Signed in as ${firstC} (admin)` : `Signed in as ${firstC} (no admin role)`;
       }
-      const resp = await fetch('/.auth/me', { cache: 'no-store' });
+  const resp = await fetch('/.auth/me', { cache: 'no-store', credentials:'include' });
       if(!resp.ok) return false;
       const info = await resp.json();
       const principal = info && info.clientPrincipal;
@@ -248,7 +248,7 @@
   }
   async function showPrincipalDebug(){
     try{
-      const resp = await fetch('/api/me');
+  const resp = await fetch('/api/me', { credentials:'include' });
       if(!resp.ok) return;
       const dataDbg = await resp.json();
       if(authStatusEl && dataDbg && dataDbg.principal){

@@ -3,6 +3,7 @@
 (function(){
   const BOX_ID = 'auth-box';
   const STORAGE_KEY = 'swaAuthPrincipal';
+  const DEBUG_MODE = /[?&](authdebug|debugauth)=1/i.test(location.search);
   function qs(id){ return document.getElementById(id); }
   function loginUrl(provider){
     const ret = encodeURIComponent(location.pathname + location.search + location.hash);
@@ -63,18 +64,23 @@
     const hadCache = loadCached();
     if(!hadCache) renderLoading();
     try{
-      const resp = await fetch('/.auth/me',{cache:'no-store'});
+  const resp = await fetch('/.auth/me?ts='+Date.now(),{cache:'no-store', credentials:'include'});
       if(!resp.ok){ renderSignedOut(); return; }
       const info = await resp.json(); // shape: {clientPrincipal:{identityProvider,userDetails,userRoles,claims:[]}}
       let principal = info && (info.clientPrincipal || info.principal || info);
-      // If userDetails empty, attempt to extract from email/upn/name claim
-      if(principal && (!principal.userDetails || principal.userDetails.trim()==='')){
-        if(Array.isArray(principal.claims)){
-          const findClaim = (typArr)=> principal.claims.find(c=> typArr.includes(c.typ || c.type));
-          const emailClaim = findClaim(['email','emails']);
-          const upnClaim = findClaim(['upn']);
-          const nameClaim = findClaim(['name']);
-            principal.userDetails = (emailClaim && emailClaim.val) || (upnClaim && upnClaim.val) || (nameClaim && nameClaim.val) || principal.userDetails;
+      if(principal){
+        principal = normalizePrincipal(principal);
+      }
+      if(DEBUG_MODE){
+        console.debug('[auth] Raw /.auth/me response', info);
+        if(!document.getElementById('auth-debug') && qs(BOX_ID)){
+          const pre = document.createElement('pre');
+          pre.id='auth-debug';
+          pre.style.maxWidth='480px';
+          pre.style.whiteSpace='pre-wrap';
+          pre.style.fontSize='11px';
+          pre.textContent = JSON.stringify(info,null,2);
+          qs(BOX_ID).appendChild(pre);
         }
       }
       if(principal && principal.userDetails){
@@ -85,6 +91,33 @@
         try{ localStorage.removeItem(STORAGE_KEY); }catch{}
       }
     }catch{ renderSignedOut(); }
+  }
+  function normalizePrincipal(p){
+    if(!p) return p;
+    // If userDetails present & non-empty, keep
+    if(p.userDetails && p.userDetails.trim()!== '') return p;
+    const claims = Array.isArray(p.claims) ? p.claims : [];
+    const typesPriorityGroups = [
+      ['email','emails','preferred_username','upn','http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'],
+      ['name','http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'],
+    ];
+    const findVal = (cands)=>{
+      const lc = cands.map(x=>x.toLowerCase());
+      const hit = claims.find(c=> c.typ && lc.includes(c.typ.toLowerCase()));
+      return hit && hit.val;
+    };
+    for(const group of typesPriorityGroups){
+      const v = findVal(group); if(v){ p.userDetails = v; break; }
+    }
+    // Try given + surname if still missing
+    if(!p.userDetails){
+      const given = claims.find(c=> /givenname$/i.test(c.typ||''));
+      const sur = claims.find(c=> /surname$/i.test(c.typ||''));
+      if(given || sur){
+        p.userDetails = [given && given.val, sur && sur.val].filter(Boolean).join(' ');
+      }
+    }
+    return p;
   }
   window.addEventListener('storage', (e)=>{
     if(e.key === STORAGE_KEY){
