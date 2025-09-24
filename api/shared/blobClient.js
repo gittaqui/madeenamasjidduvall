@@ -19,8 +19,9 @@ function getBlobServiceClient() {
 }
 
 function getBlobClient() {
-  const container = process.env.PRAYER_TIMES_CONTAINER || 'config';
-  const blob = process.env.PRAYER_TIMES_BLOB || 'prayer-times.json';
+  // Support both legacy PRAYER_TIMES_* and new STORAGE_* env variable names
+  const container = process.env.STORAGE_CONTAINER || process.env.PRAYER_TIMES_CONTAINER || 'content';
+  const blob = process.env.STORAGE_BLOB || process.env.PRAYER_TIMES_BLOB || 'prayer-times.json';
   const svc = getBlobServiceClient();
   const containerClient = svc.getContainerClient(container);
   return containerClient.getBlobClient(blob);

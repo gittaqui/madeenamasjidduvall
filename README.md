@@ -34,12 +34,24 @@ This repo includes an `api/` Azure Functions app exposing `/api/prayer-times`:
 - GET: returns `prayer-times.json` from a private Azure Storage Blob container.
 - POST: requires Static Web Apps `admin` role, writes JSON to the same blob.
 
-Configure these app settings for the Functions app (via SWA linked function app settings):
+Configure these app settings for the Functions app (via SWA app settings). Current deployment uses STORAGE_* (legacy PRAYER_TIMES_* still accepted):
 
-- `STORAGE_ACCOUNT_BLOB_URL`: e.g., `https://<account>.blob.core.windows.net`
-- `PRAYER_TIMES_CONTAINER`: blob container name (default `config`)
-- `PRAYER_TIMES_BLOB`: blob name (default `prayer-times.json`)
-- Optional `MANAGED_IDENTITY_CLIENT_ID` when using a user-assigned identity
+`STORAGE_ACCOUNT_BLOB_URL` e.g., `https://<account>.blob.core.windows.net`
+`STORAGE_CONTAINER` (current: `content`)
+`STORAGE_BLOB` (current: `prayer-times.json`)
+Optional: `MANAGED_IDENTITY_CLIENT_ID` for user-assigned identity
 
-Authorization is set in `staticwebapp.config.json` to allow anonymous GET and admin-only POST. The API also validates `admin` from `X-MS-CLIENT-PRINCIPAL`.
+Legacy equivalents:
+`PRAYER_TIMES_CONTAINER`, `PRAYER_TIMES_BLOB` still work if STORAGE_* not set.
 
+Authorization is defined in `staticwebapp.config.json` (anonymous GET, admin POST). The API double-checks the `admin` role from `X-MS-CLIENT-PRINCIPAL`.
+
+## Existing Deployment
+
+GitHub Actions workflow `.github/workflows/azure-static-web-app.yml` expects secret:
+`AZURE_STATIC_WEB_APPS_API_TOKEN_GREEN_SKY_058AA821E`
+
+Add under Settings > Secrets > Actions. Deploys:
+- Static content (repo root)
+- Functions (`api/`)
+- Storage env vars provided by portal/app settings
