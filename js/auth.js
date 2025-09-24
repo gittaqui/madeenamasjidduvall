@@ -24,7 +24,7 @@
   }
   function renderSignedIn(principal){
     const roles = principal.userRoles || [];
-    const name = principal.userDetails || principal.identityProvider || 'User';
+    const name = firstNameOf(principal.userDetails || principal.identityProvider || 'User');
     const b=qs(BOX_ID); if(!b) return;
     const isAdmin = roles.includes('admin');
     b.innerHTML = `
@@ -35,6 +35,14 @@
       </div>`;
   }
   function escapeHtml(s){ return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c)); }
+  function firstNameOf(details){
+    if(!details) return 'User';
+    // If email, take part before @, otherwise first token
+    let raw = details.includes('@') ? details.split('@')[0] : details.split(/\s+/)[0];
+    raw = raw.replace(/[^A-Za-z0-9_-]/g,' ').trim();
+    if(!raw) return 'User';
+    return raw.charAt(0).toUpperCase()+raw.slice(1);
+  }
   async function load(){
     renderLoading();
     try{

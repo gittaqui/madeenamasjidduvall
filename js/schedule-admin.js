@@ -224,9 +224,16 @@
       const resp = await fetch('/.auth/me', { cache: 'no-store' });
       if(!resp.ok) return false;
       const info = await resp.json();
-      const roles = (info && info.clientPrincipal && info.clientPrincipal.userRoles) || [];
+      const principal = info && info.clientPrincipal;
+      const roles = (principal && principal.userRoles) || [];
+      const firstName = principal ? firstNameOf(principal.userDetails || principal.identityProvider || '') : '';
       if(authStatusEl){
-        authStatusEl.textContent = roles.length ? 'Signed in roles: '+ roles.join(', ') : 'Not signed in (admin required for saving)';
+        if(!principal){
+          authStatusEl.textContent = 'Not signed in (admin required for saving)';
+        } else {
+          const base = firstName ? `Signed in as ${firstName}` : 'Signed in';
+          authStatusEl.textContent = roles.includes('admin') ? `${base} (admin)` : `${base} (no admin role)`;
+        }
       }
       return roles.includes('admin');
     }catch{ return false; }
@@ -320,4 +327,12 @@
   // Kick off auth status detection
   checkAdminRole().then(()=> showPrincipalDebug());
 })();
+
+function firstNameOf(details){
+  if(!details) return '';
+  let raw = details.includes('@') ? details.split('@')[0] : details.split(/\s+/)[0];
+  raw = raw.replace(/[^A-Za-z0-9_-]/g,' ').trim();
+  if(!raw) return '';
+  return raw.charAt(0).toUpperCase()+raw.slice(1);
+}
 
