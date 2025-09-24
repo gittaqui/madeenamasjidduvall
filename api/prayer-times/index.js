@@ -13,18 +13,20 @@ async function writeBlobJson(blobClient, obj) {
   await blobClient.uploadData(data, { blobHTTPHeaders: { blobContentType: 'application/json' } });
 }
 
-function isAdmin(req) {
-  // Static Web Apps injects X-MS-CLIENT-PRINCIPAL header when authenticated
+function parsePrincipal(req){
   try {
-    const principalB64 = req.headers['x-ms-client-principal'];
-    if (!principalB64) return false;
-    const json = Buffer.from(principalB64, 'base64').toString('utf8');
-    const principal = JSON.parse(json);
-    const roles = principal.userRoles || [];
-    return roles.includes('admin');
-  } catch {
-    return false;
-  }
+    const b64 = req.headers['x-ms-client-principal'];
+    if(!b64) return null;
+    return JSON.parse(Buffer.from(b64,'base64').toString('utf8'));
+  } catch { return null; }
+}
+
+function authStatus(req){
+  const principal = parsePrincipal(req);
+  const roles = (principal && principal.userRoles) || [];
+  const isAuthenticated = !!principal;
+  const isAdmin = roles.includes('admin') || (process.env.DEV_ALLOW_NON_ADMIN === '1' && roles.includes('authenticated'));
+  return { principal, roles, isAuthenticated, isAdmin };
 }
 
 async function streamToBuffer(readable) {
@@ -85,10 +87,15 @@ module.exports = async function (context, req) {
   }
 
   if (method === 'POST') {
-    // Enforce admin at API layer as well
-    if (!isAdmin(req)) {
-      // In SWA, 401/403 triggers auth; we return 401 to allow redirect from config
-      context.res = { status: 401, body: 'Unauthorized' };
+    // Auth & role evaluation
+    const { isAuthenticated, isAdmin, roles } = authStatus(req);
+    if(!isAuthenticated){
+      context.res = { status: 401, body: 'Unauthorized (not signed in)' }; // triggers login redirect
+      return;
+    }
+    if(!isAdmin){
+      // Return 403 so user sees forbidden instead of login loop when already signed in
+      context.res = { status: 403, body: 'Forbidden: admin role required. Roles on token: '+ roles.join(', ') };
       return;
     }
     if (!storage || !storage.blobClient) {

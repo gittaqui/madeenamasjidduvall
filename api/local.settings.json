@@ -6,6 +6,7 @@
     "STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
   "PRAYER_TIMES_CONTAINER": "config",
   "PRAYER_TIMES_BLOB": "prayer-times.json",
-  "WEBSITE_NODE_DEFAULT_VERSION": "~18"
+  "WEBSITE_NODE_DEFAULT_VERSION": "~18",
+  "DEV_ALLOW_NON_ADMIN": "1"
   }
 }

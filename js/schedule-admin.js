@@ -215,6 +215,11 @@
         location.href = '/.auth/login/aad?post_login_redirect_uri=/admin-schedule.html';
         return;
       }
+      if(resp.status === 403){
+        const txt = await resp.text();
+        alert('Save blocked: '+txt+'\nIf this is local dev and you want to bypass, set DEV_ALLOW_NON_ADMIN=1 in Functions environment or add admin role.');
+        return;
+      }
       if(resp.status === 404){
         alert('Save failed: API endpoint not found. Likely the Functions API has not been deployed yet. Ensure GitHub Action ran successfully or manual deploy completed.');
         return;
