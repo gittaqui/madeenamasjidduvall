@@ -17,8 +17,9 @@
     b.innerHTML = `
       <div class="d-flex flex-wrap align-items-center gap-2">
         <span class="text-secondary small">Sign in:</span>
-        <a class="btn btn-sm btn-outline-primary" href="${loginUrl('aad')}" title="Sign in with Microsoft / Outlook">Microsoft</a>
-        <a class="btn btn-sm btn-outline-primary" href="${loginUrl('google')}" title="Sign in with Google / Gmail">Google</a>
+        <a class="btn btn-sm btn-outline-primary" href="${loginUrl('aad')}" title="Sign in with Microsoft (Entra ID)">Microsoft</a>
+        <a class="btn btn-sm btn-outline-primary" href="${loginUrl('github')}" title="Sign in with GitHub">GitHub</a>
+        <!-- To enable Google later: configure Google provider in Azure Portal (Authentication > switch to Custom > Add identity provider) then re-add a Google button pointing to /.auth/login/google -->
       </div>`;
   }
   function renderSignedIn(principal){
