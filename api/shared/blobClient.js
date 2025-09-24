@@ -12,8 +12,13 @@ function getCredential() {
 }
 
 function getBlobServiceClient() {
+  // Preferred: managed identity + account URL
+  const conn = process.env.STORAGE_CONNECTION_STRING;
+  if (conn) {
+    return BlobServiceClient.fromConnectionString(conn);
+  }
   const accountUrl = process.env.STORAGE_ACCOUNT_BLOB_URL; // e.g., https://<account>.blob.core.windows.net
-  if (!accountUrl) throw new Error('Missing STORAGE_ACCOUNT_BLOB_URL');
+  if (!accountUrl) throw new Error('Missing STORAGE_ACCOUNT_BLOB_URL or STORAGE_CONNECTION_STRING');
   const cred = getCredential();
   return new BlobServiceClient(accountUrl, cred);
 }

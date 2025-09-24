@@ -15,6 +15,7 @@
   const btnNextMonth = document.getElementById('btn-range-next-month');
   const presetMonthInput = document.getElementById('preset-month');
   const btnSetMonth = document.getElementById('btn-range-set-month');
+  const authStatusEl = document.getElementById('auth-status');
 
   let data = {
     updated: new Date().toISOString().slice(0,10),
@@ -180,6 +181,7 @@
       location.href = '/.auth/login/aad?post_login_redirect_uri=/admin-schedule.html';
       return;
     }
+  if(btnSaveServer){ btnSaveServer.disabled = true; btnSaveServer.textContent = 'Saving…'; }
     try{
       const resp = await fetch('/api/prayer-times',{
         method:'POST',
@@ -213,6 +215,9 @@
     }catch(err){
       alert('Save failed: network error (possibly transient). If you were just redirected or lost connectivity, retry.');
     }
+    finally {
+      if(btnSaveServer){ btnSaveServer.disabled = false; btnSaveServer.textContent = 'Save to Server'; }
+    }
   }
   async function checkAdminRole(){
     try{
@@ -220,8 +225,22 @@
       if(!resp.ok) return false;
       const info = await resp.json();
       const roles = (info && info.clientPrincipal && info.clientPrincipal.userRoles) || [];
+      if(authStatusEl){
+        authStatusEl.textContent = roles.length ? 'Signed in roles: '+ roles.join(', ') : 'Not signed in (admin required for saving)';
+      }
       return roles.includes('admin');
     }catch{ return false; }
+  }
+  async function showPrincipalDebug(){
+    try{
+      const resp = await fetch('/api/me');
+      if(!resp.ok) return;
+      const dataDbg = await resp.json();
+      if(authStatusEl && dataDbg && dataDbg.principal){
+        const roles = dataDbg.principal.userRoles || [];
+        authStatusEl.textContent = 'Signed in email: ' + (dataDbg.principal.userDetails || 'unknown') + ' | Roles: ' + roles.join(', ');
+      }
+    }catch{}
   }
   async function fetchFromServer(){
     try{
@@ -298,5 +317,7 @@
   if(RANGE_START) RANGE_START.value = d.toISOString().slice(0,10);
   if(RANGE_END) RANGE_END.value = d.toISOString().slice(0,10);
   fillOverride(MONTH_INPUT.value.trim());
+  // Kick off auth status detection
+  checkAdminRole().then(()=> showPrincipalDebug());
 })();
 

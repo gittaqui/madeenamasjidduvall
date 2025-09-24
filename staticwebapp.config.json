@@ -1,7 +1,8 @@
 {
   "routes": [
     { "route": "/api/prayer-times", "methods": ["GET"], "allowedRoles": ["anonymous"] },
-    { "route": "/api/prayer-times", "methods": ["POST"], "allowedRoles": ["admin"] }
+    { "route": "/api/prayer-times", "methods": ["POST"], "allowedRoles": ["admin"] },
+    { "route": "/api/me", "methods": ["GET"], "allowedRoles": ["anonymous"] }
   ],
   "navigationFallback": { "rewrite": "/index.html", "exclude": ["/api/*", "/assets/*", "/lib/*"] },
   "responseOverrides": {
