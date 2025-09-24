@@ -8,9 +8,17 @@ async function readBlobJson(blobClient) {
   return JSON.parse(buf.toString('utf8'));
 }
 
-async function writeBlobJson(blobClient, obj) {
+async function writeBlobJson(blobClient, obj, context) {
   const data = Buffer.from(JSON.stringify(obj, null, 2), 'utf8');
-  await blobClient.uploadData(data, { blobHTTPHeaders: { blobContentType: 'application/json' } });
+  // Try modern helper first; fall back to older upload method
+  if (typeof blobClient.uploadData === 'function') {
+    return blobClient.uploadData(data, { blobHTTPHeaders: { blobContentType: 'application/json' } });
+  }
+  if (typeof blobClient.upload === 'function') {
+    // upload(data, length, options)
+    return blobClient.upload(data, data.length, { blobHTTPHeaders: { blobContentType: 'application/json' } });
+  }
+  throw new Error('No supported upload method on blobClient');
 }
 
 function parsePrincipal(req){
@@ -102,10 +110,8 @@ module.exports = async function (context, req) {
         return;
       }
     }
-    if (!storage || !storage.blobClient) {
-      context.res = { status: 503, body: 'Storage not configured on server' };
-      return;
-    }
+  const fs = require('fs');
+  const path = require('path');
     try {
       const body = req.body;
       if (!body || typeof body !== 'object') {
@@ -121,12 +127,32 @@ module.exports = async function (context, req) {
   // If root adhan/iqamah mostly empty but exactly one month override exists, promote it into root for simplified client consumption
   promoteSingleMonthIntoRoot(body, context);
       // Ensure container exists
-      try { await storage.containerClient.createIfNotExists({ access: 'private' }); } catch {}
-  await writeBlobJson(storage.blobClient, body);
-      context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: { status: 'OK', container: storage.containerName, blob: storage.blobName, months: Object.keys(body.months||{}).length, days: Object.keys(body.days||{}).length } };
+      let persistedVia = 'blob';
+      if (storage && storage.blobClient) {
+        try {
+          try { await storage.containerClient.createIfNotExists({ access: 'private' }); } catch {}
+          await writeBlobJson(storage.blobClient, body, context);
+        } catch (blobErr) {
+          context.log('Blob upload failed, attempting local file fallback:', blobErr.message);
+          persistedVia = 'local-file';
+        }
+      } else {
+        persistedVia = 'local-file';
+      }
+      if (persistedVia === 'local-file') {
+        const localPath = path.join(__dirname, '..', '..', 'prayer-times.local.json');
+        try {
+          fs.writeFileSync(localPath, JSON.stringify(body, null, 2), 'utf8');
+          context.log('Saved prayer times to local fallback file', localPath);
+        } catch(fileErr){
+          context.log('Local file fallback write failed:', fileErr.message);
+          throw new Error('Both blob storage and local file fallback failed: '+ fileErr.message);
+        }
+      }
+      context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: { status: 'OK', via: persistedVia, container: storage && storage.containerName, blob: storage && storage.blobName, months: Object.keys(body.months||{}).length, days: Object.keys(body.days||{}).length } };
     } catch (err) {
       context.log('POST error', err.message);
-      context.res = { status: 500, body: 'Failed to save prayer times' };
+      context.res = { status: 500, headers: { 'Content-Type': 'application/json' }, body: { error: 'Failed to save prayer times', message: err.message, stack: err.stack } };
     }
     return;
   }

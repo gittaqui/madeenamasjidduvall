@@ -21,7 +21,8 @@ function getStorageRefs() {
   const blobName = process.env.STORAGE_BLOB || process.env.PRAYER_TIMES_BLOB || 'prayer-times.json';
   const serviceClient = getBlobServiceClient();
   const containerClient = serviceClient.getContainerClient(containerName);
-  const blobClient = containerClient.getBlobClient(blobName);
+  // Use BlockBlobClient explicitly so we have predictable upload APIs
+  const blobClient = containerClient.getBlockBlobClient(blobName);
   return { serviceClient, containerClient, blobClient, containerName, blobName };
 }
 
