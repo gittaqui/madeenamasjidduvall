@@ -40,8 +40,8 @@ if($Seed){
     Write-Host 'Seeding initial schedule via local file + POST requires browser auth; fallback: create local seed file.' -ForegroundColor Yellow
     $seedObj = @{
       note='Initial schedule';
-      adhan=@{ fajr='05:30 AM'; dhuhr='01:15 PM'; asr='05:00 PM'; asrHanafi='05:30 PM'; maghrib='Sunset'; isha='09:15 PM' };
-      iqamah=@{ fajr='06:00 AM'; dhuhr='01:30 PM'; asr='05:15 PM'; asrHanafi='05:45 PM'; maghrib='Sunset +5'; isha='09:30 PM' };
+      adhan=@{ fajr='05:30 AM'; dhuhr='01:15 PM'; asr='05:00 PM'; maghrib='Sunset'; isha='09:15 PM' };
+      iqamah=@{ fajr='06:00 AM'; dhuhr='01:30 PM'; asr='05:15 PM'; maghrib='Sunset +5'; isha='09:30 PM' };
       jumuah=@(@{ title='Khutbah'; start='13:15'; end='13:45'; salah='13:45' })
     } | ConvertTo-Json -Depth 5
     $seedPath = Join-Path $PSScriptRoot 'seed-prayer-times.json'

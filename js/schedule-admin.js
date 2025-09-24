@@ -20,7 +20,7 @@
   let data = {
     updated: new Date().toISOString().slice(0,10),
     note: '',
-    sunrise: '',
+  sunrise: '', // auto-fetched
     adhan: {},
     iqamah: {},
     jumuah: [],
@@ -31,21 +31,19 @@
   function byId(id){ return document.getElementById(id); }
   function assignFields(prefix){
     const obj = {
-      sunrise: byId(`${prefix}-sunrise`).value.trim(),
-      note: byId(`${prefix}-note`).value.trim(),
+  sunrise: data.sunrise || '',
+  note: byId(`${prefix}-note`).value.trim(),
       adhan: {
         fajr: byId(`${prefix}-adhan-fajr`).value.trim(),
         dhuhr: byId(`${prefix}-adhan-dhuhr`).value.trim(),
-        asr: byId(`${prefix}-adhan-asr`).value.trim(),
-        asrHanafi: byId(`${prefix}-adhan-asrHanafi`).value.trim(),
+  asr: byId(`${prefix}-adhan-asr`).value.trim(),
         maghrib: byId(`${prefix}-adhan-maghrib`).value.trim(),
         isha: byId(`${prefix}-adhan-isha`).value.trim()
       },
       iqamah: {
         fajr: byId(`${prefix}-iqamah-fajr`).value.trim(),
         dhuhr: byId(`${prefix}-iqamah-dhuhr`).value.trim(),
-        asr: byId(`${prefix}-iqamah-asr`).value.trim(),
-        asrHanafi: byId(`${prefix}-iqamah-asrHanafi`).value.trim(),
+  asr: byId(`${prefix}-iqamah-asr`).value.trim(),
         maghrib: byId(`${prefix}-iqamah-maghrib`).value.trim(),
         isha: byId(`${prefix}-iqamah-isha`).value.trim()
       },
@@ -88,18 +86,17 @@
   }
   function fillMonthFromDefaults(){
     // Prefill the month override UI with root defaults
-    byId('ov-sunrise').value = data.sunrise || '';
-    byId('ov-note').value = data.note || '';
+  byId('ov-note').value = data.note || '';
     byId('ov-adhan-fajr').value = (data.adhan||{}).fajr || '';
     byId('ov-adhan-dhuhr').value = (data.adhan||{}).dhuhr || '';
     byId('ov-adhan-asr').value = (data.adhan||{}).asr || '';
-    byId('ov-adhan-asrHanafi').value = (data.adhan||{}).asrHanafi || '';
+  // removed asrHanafi
     byId('ov-adhan-maghrib').value = (data.adhan||{}).maghrib || '';
     byId('ov-adhan-isha').value = (data.adhan||{}).isha || '';
     byId('ov-iqamah-fajr').value = (data.iqamah||{}).fajr || '';
     byId('ov-iqamah-dhuhr').value = (data.iqamah||{}).dhuhr || '';
     byId('ov-iqamah-asr').value = (data.iqamah||{}).asr || '';
-    byId('ov-iqamah-asrHanafi').value = (data.iqamah||{}).asrHanafi || '';
+  // removed asrHanafi
     byId('ov-iqamah-maghrib').value = (data.iqamah||{}).maghrib || '';
     byId('ov-iqamah-isha').value = (data.iqamah||{}).isha || '';
     const host = byId('ov-jumuah'); host.innerHTML='';
@@ -107,18 +104,17 @@
   }
   function fillOverride(key){
     const ov = (data.months && data.months[key]) || {};
-    byId('ov-sunrise').value = ov.sunrise || '';
-    byId('ov-note').value = ov.note || '';
+  byId('ov-note').value = ov.note || '';
     byId('ov-adhan-fajr').value = (ov.adhan||{}).fajr || '';
     byId('ov-adhan-dhuhr').value = (ov.adhan||{}).dhuhr || '';
     byId('ov-adhan-asr').value = (ov.adhan||{}).asr || '';
-    byId('ov-adhan-asrHanafi').value = (ov.adhan||{}).asrHanafi || '';
+  // removed asrHanafi
     byId('ov-adhan-maghrib').value = (ov.adhan||{}).maghrib || '';
     byId('ov-adhan-isha').value = (ov.adhan||{}).isha || '';
     byId('ov-iqamah-fajr').value = (ov.iqamah||{}).fajr || '';
     byId('ov-iqamah-dhuhr').value = (ov.iqamah||{}).dhuhr || '';
     byId('ov-iqamah-asr').value = (ov.iqamah||{}).asr || '';
-    byId('ov-iqamah-asrHanafi').value = (ov.iqamah||{}).asrHanafi || '';
+  // removed asrHanafi
     byId('ov-iqamah-maghrib').value = (ov.iqamah||{}).maghrib || '';
     byId('ov-iqamah-isha').value = (ov.iqamah||{}).isha || '';
     const host = byId('ov-jumuah'); host.innerHTML='';
@@ -129,7 +125,7 @@
     const ov = assignFields('ov');
     if(!data.months) data.months = {};
     data.months[key] = {
-      sunrise: ov.sunrise || undefined,
+  sunrise: data.sunrise || undefined,
       note: ov.note || undefined,
       adhan: ov.adhan,
       iqamah: ov.iqamah,
@@ -150,7 +146,7 @@
     for(let d = new Date(startDate); d <= endDate; d.setDate(d.getDate()+1)){
       const key = d.toISOString().slice(0,10);
       data.days[key] = {
-        sunrise: vals.sunrise || undefined,
+    sunrise: data.sunrise || undefined,
         note: vals.note || undefined,
         adhan: JSON.parse(JSON.stringify(vals.adhan)),
         iqamah: JSON.parse(JSON.stringify(vals.iqamah)),
@@ -364,6 +360,114 @@
   fillOverride(MONTH_INPUT.value.trim());
   // Kick off auth status detection
   checkAdminRole().then(()=> showPrincipalDebug());
+
+  /* ================= Sunrise Auto-Fetch ================= */
+  const btnRefreshSun = document.getElementById('btn-refresh-sun');
+  const sunriseBadge = document.getElementById('sunrise-badge');
+  async function fetchSunrise(){
+    if(!sunriseBadge) return;
+    sunriseBadge.textContent = 'Loading…';
+    sunriseBadge.classList.remove('bg-warning','bg-danger');
+    sunriseBadge.classList.add('bg-info');
+    try{
+      // Assumption: Mosque location coordinates (adjust as needed)
+      const lat = 47.744; // TODO: update with real latitude
+      const lng = -121.985; // TODO: update with real longitude
+      const resp = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&formatted=0`);
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      const obj = await resp.json();
+      if(!obj || obj.status !== 'OK' || !obj.results) throw new Error('Invalid API response');
+      const sunriseISO = obj.results.sunrise; // UTC ISO
+      const localDate = new Date(sunriseISO);
+      const hhmm = to12h(localDate);
+      data.sunrise = hhmm;
+      sunriseBadge.textContent = hhmm;
+      sunriseBadge.classList.remove('bg-info');
+      sunriseBadge.classList.add('bg-success');
+      // Update any preview
+      buildPreviewGrid();
+    }catch(err){
+      sunriseBadge.textContent = 'Error';
+      sunriseBadge.classList.remove('bg-info');
+      sunriseBadge.classList.add('bg-danger');
+      console.error('[sunrise] fetch failed', err);
+    }
+  }
+  if(btnRefreshSun) btnRefreshSun.addEventListener('click', fetchSunrise);
+
+  function to12h(d){
+    let h = d.getHours();
+    const m = d.getMinutes();
+    const ampm = h>=12 ? 'PM':'AM';
+    h = h%12; if(h===0) h=12;
+    return `${h}:${String(m).padStart(2,'0')} ${ampm}`;
+  }
+
+  /* ================= Preview Grid ================= */
+  const previewGridHost = document.getElementById('preview-grid');
+  const btnRefreshPreview = document.getElementById('btn-refresh-preview');
+  function currentRoot(){
+    return {
+      fajr: { adhan: (data.adhan||{}).fajr||'', iqamah: (data.iqamah||{}).fajr||'' },
+      dhuhr: { adhan: (data.adhan||{}).dhuhr||'', iqamah: (data.iqamah||{}).dhuhr||'' },
+      asr: { adhan: (data.adhan||{}).asr||'', iqamah: (data.iqamah||{}).asr||'' },
+      maghrib: { adhan: (data.adhan||{}).maghrib||'', iqamah: (data.iqamah||{}).maghrib||'' },
+      isha: { adhan: (data.adhan||{}).isha||'', iqamah: (data.iqamah||{}).isha||'' }
+    };
+  }
+  function readWorkingValues(){
+    // Reads current form (root override fields with prefix ov-)
+    const get = id=> (document.getElementById(id) || {}).value || '';
+    return {
+      fajr: { adhan: get('ov-adhan-fajr'), iqamah: get('ov-iqamah-fajr') },
+      dhuhr: { adhan: get('ov-adhan-dhuhr'), iqamah: get('ov-iqamah-dhuhr') },
+      asr: { adhan: get('ov-adhan-asr'), iqamah: get('ov-iqamah-asr') },
+      maghrib: { adhan: get('ov-adhan-maghrib'), iqamah: get('ov-iqamah-maghrib') },
+      isha: { adhan: get('ov-adhan-isha'), iqamah: get('ov-iqamah-isha') }
+    };
+  }
+  function buildPreviewGrid(){
+    if(!previewGridHost) return;
+    const work = readWorkingValues();
+    // Show 4 core prayers in 2x2 (Fajr, Dhuhr, Asr, Maghrib). Isha can appear on large screens or tooltip.
+    const order = ['fajr','dhuhr','asr','maghrib'];
+    previewGridHost.innerHTML = '';
+    order.forEach(name=>{
+      const rec = work[name];
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      div.innerHTML = `
+        <div class="name">${name.charAt(0).toUpperCase()+name.slice(1)}</div>
+        <div class="times">${rec.adhan||'--'} / <strong>${rec.iqamah||'--'}</strong></div>
+      `;
+      previewGridHost.appendChild(div);
+    });
+    // Optionally append sunrise badge mini or Isha below
+    if(data.sunrise){
+      const sunriseDiv = document.createElement('div');
+      sunriseDiv.className = 'preview-item';
+      sunriseDiv.innerHTML = `<div class="name">Sunrise</div><div class="times">${data.sunrise}</div>`;
+      previewGridHost.appendChild(sunriseDiv);
+    }
+  // Update dedicated Fajr 2x2 grid if present
+  const fgAdhan = document.getElementById('fg-adhan');
+  const fgIqamah = document.getElementById('fg-iqamah');
+  if(fgAdhan) fgAdhan.textContent = work.fajr.adhan || '--';
+  if(fgIqamah) fgIqamah.textContent = work.fajr.iqamah || '--';
+  }
+  if(btnRefreshPreview) btnRefreshPreview.addEventListener('click', buildPreviewGrid);
+  // Auto update preview on input changes (debounced)
+  let previewTimer = null;
+  document.addEventListener('input', (e)=>{
+    if(!(e.target instanceof HTMLElement)) return;
+    if(!e.target.closest('#root-override-section')) return; // scope limit
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(buildPreviewGrid, 300);
+  });
+
+  // Initial preview + sunrise fetch
+  buildPreviewGrid();
+  fetchSunrise();
 })();
 
 function firstNameOf(details){

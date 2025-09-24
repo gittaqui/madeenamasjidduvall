@@ -100,8 +100,7 @@
     { key: 'fajr', label: 'Fajr' },
     { key: 'sunrise', label: 'Sunrise', iqamah: false },
     { key: 'dhuhr', label: 'Dhuhr' },
-    { key: 'asr', label: 'Asr' },
-    { key: 'asrHanafi', label: 'Asr Hanafi' },
+  { key: 'asr', label: 'Asr' },
     { key: 'maghrib', label: 'Maghrib' },
     { key: 'isha', label: 'Isha' }
   ];

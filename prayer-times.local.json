@@ -1,0 +1,41 @@
+{
+  "updated": "2025-09-24",
+  "note": "",
+  "sunrise": "6:50 AM",
+  "adhan": {
+    "fajr": "05:26 AM",
+    "dhuhr": "1:03 PM",
+  "asr": "04:29 PM",
+    "maghrib": "07:15 PM",
+    "isha": "08:45 PM"
+  },
+  "iqamah": {
+    "fajr": "06:15 AM",
+    "dhuhr": "01:40 PM",
+  "asr": "6:00 PM",
+    "maghrib": "07:18 PM",
+    "isha": "9:00 PM"
+  },
+  "jumuah": [],
+  "months": {
+    "2025-09": {
+      "sunrise": "6:50 AM",
+      "adhan": {
+        "fajr": "05:26 AM",
+        "dhuhr": "1:03 PM",
+  "asr": "04:29 PM",
+        "maghrib": "07:15 PM",
+        "isha": "08:45 PM"
+      },
+      "iqamah": {
+        "fajr": "06:15 AM",
+        "dhuhr": "01:40 PM",
+  "asr": "6:00 PM",
+        "maghrib": "07:18 PM",
+        "isha": "9:00 PM"
+      },
+      "jumuah": []
+    }
+  },
+  "days": {}
+}
