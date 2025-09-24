@@ -13,7 +13,9 @@
     <h1 class="mb-3">Prayer Times Editor</h1>
   <p class="text-secondary">Update a month override or apply a schedule to a date range, then save changes.</p>
 
-    <div class="alert alert-info">Tip: This tool runs locally in your browser and does not upload data anywhere.</div>
+    <div class="alert alert-info">
+      Tip: Editing happens locally. "Save to Server" uploads (admin only). "Fetch from Server" loads the live copy if deployed.
+    </div>
 
     <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
       <div class="d-flex align-items-center gap-2">
@@ -33,7 +35,8 @@
   <input type="text" id="preset-month" class="form-control max-w-220" inputmode="numeric" pattern="\d{4}-\d{2}" placeholder="YYYY-MM" title="Select month (YYYY-MM)">
   <button class="btn btn-sm btn-outline-primary" id="btn-range-set-month" title="Set range to selected month">Set Range</button>
       </div>
-      <button class="btn btn-outline-secondary" id="btn-load-json">Import prayer-times.json</button>
+  <button class="btn btn-outline-secondary" id="btn-load-json">Import prayer-times.json</button>
+  <button class="btn btn-outline-primary" id="btn-fetch-server" title="Fetch current server copy (read-only)">Fetch from Server</button>
       <input type="file" id="file-input" accept="application/json" hidden>
     </div>
 

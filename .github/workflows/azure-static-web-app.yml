@@ -1,4 +1,4 @@
-name: Azure Static Web Apps CI/CD (External Functions)
+name: Azure Static Web Apps CI/CD (External Functions - Disabled)
 
 on:
   push:
@@ -9,8 +9,9 @@ on:
 
 jobs:
   build_and_deploy:
+    if: false  # Disabled in favor of managed Functions workflow
     runs-on: ubuntu-latest
-    name: Build and Deploy
+    name: Build and Deploy (Disabled)
     steps:
       - name: Checkout
         uses: actions/checkout@v4

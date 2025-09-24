@@ -4,6 +4,7 @@
   const RANGE_END = document.getElementById('range-end');
   const fileInput = document.getElementById('file-input');
   const btnLoad = document.getElementById('btn-load-json');
+  const btnFetchServer = document.getElementById('btn-fetch-server');
   const btnFillMonthFromDefaults = document.getElementById('btn-use-defaults');
   const btnApplyRange = document.getElementById('btn-apply-range');
   const btnDownload = document.getElementById('btn-download');
@@ -206,6 +207,28 @@
       alert('Save failed: network or CORS error');
     }
   }
+  async function fetchFromServer(){
+    try{
+      const resp = await fetch('/api/prayer-times');
+      if(resp.status === 404){
+        alert('Fetch failed: API endpoint not found. Ensure deployment with managed Functions succeeded.');
+        return;
+      }
+      if(!resp.ok){
+        const txt = await resp.text();
+        alert('Fetch failed ('+resp.status+'): '+txt);
+        return;
+      }
+      const obj = await resp.json();
+      data = { ...obj };
+      // Refresh current month override display
+      const key = MONTH_INPUT.value.trim();
+      if(key) fillOverride(key);
+      alert('Fetched server copy into editor (remember to Download or Save to Server to persist local edits).');
+    }catch(err){
+      alert('Fetch failed: network error');
+    }
+  }
   function importJson(){ fileInput.click(); }
   fileInput.addEventListener('change', (e)=>{
     const f = e.target.files && e.target.files[0];
@@ -224,6 +247,7 @@
 
   btnLoad.addEventListener('click', importJson);
   btnFillMonthFromDefaults.addEventListener('click', fillMonthFromDefaults);
+  if(btnFetchServer) btnFetchServer.addEventListener('click', fetchFromServer);
   if(btnApplyRange) btnApplyRange.addEventListener('click', applyRange);
   btnDownload.addEventListener('click', download);
   btnSaveServer.addEventListener('click', saveToServer);
