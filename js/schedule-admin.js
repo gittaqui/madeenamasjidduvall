@@ -221,6 +221,14 @@
   }
   async function checkAdminRole(){
     try{
+      // Try cached principal first for immediate UX continuity
+      let cachedPrincipal = null;
+      try{ const raw = localStorage.getItem('swaAuthPrincipal'); if(raw) cachedPrincipal = JSON.parse(raw); }catch{}
+      if(cachedPrincipal && authStatusEl){
+        const rolesC = cachedPrincipal.userRoles||[];
+        const firstC = firstNameOf(cachedPrincipal.userDetails||cachedPrincipal.identityProvider||'');
+        authStatusEl.textContent = rolesC.includes('admin') ? `Signed in as ${firstC} (admin)` : `Signed in as ${firstC} (no admin role)`;
+      }
       const resp = await fetch('/.auth/me', { cache: 'no-store' });
       if(!resp.ok) return false;
       const info = await resp.json();
@@ -245,7 +253,10 @@
       const dataDbg = await resp.json();
       if(authStatusEl && dataDbg && dataDbg.principal){
         const roles = dataDbg.principal.userRoles || [];
-        authStatusEl.textContent = 'Signed in email: ' + (dataDbg.principal.userDetails || 'unknown') + ' | Roles: ' + roles.join(', ');
+  const raw = dataDbg.principal.userDetails || 'unknown';
+  const first = firstNameOf(raw) || raw;
+  authStatusEl.textContent = `Signed in as ${first} | Roles: ${roles.join(', ')}`;
+  try{ localStorage.setItem('swaAuthPrincipal', JSON.stringify(dataDbg.principal)); }catch{}
       }
     }catch{}
   }

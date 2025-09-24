@@ -2,6 +2,7 @@
 // Supports Microsoft (AAD) and Google providers. First sign-in acts as registration.
 (function(){
   const BOX_ID = 'auth-box';
+  const STORAGE_KEY = 'swaAuthPrincipal';
   function qs(id){ return document.getElementById(id); }
   function loginUrl(provider){
     const ret = encodeURIComponent(location.pathname + location.search + location.hash);
@@ -23,8 +24,10 @@
       </div>`;
   }
   function renderSignedIn(principal){
-    const roles = principal.userRoles || [];
-    const name = firstNameOf(principal.userDetails || principal.identityProvider || 'User');
+  const roles = principal.userRoles || [];
+  const rawDetails = principal.userDetails || principal.identityProvider || 'User';
+  const first = firstNameOf(rawDetails);
+  const name = first && first.toLowerCase() !== rawDetails.toLowerCase() ? `${first} (${rawDetails})` : first;
     const b=qs(BOX_ID); if(!b) return;
     const isAdmin = roles.includes('admin');
     b.innerHTML = `
@@ -43,18 +46,39 @@
     if(!raw) return 'User';
     return raw.charAt(0).toUpperCase()+raw.slice(1);
   }
+  function loadCached(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return false;
+      const cached = JSON.parse(raw);
+      if(cached && cached.userDetails){
+        renderSignedIn(cached);
+        return true;
+      }
+    }catch{}
+    return false;
+  }
   async function load(){
-    renderLoading();
+    // Optimistic render from cache (avoids flicker on navigation)
+    const hadCache = loadCached();
+    if(!hadCache) renderLoading();
     try{
       const resp = await fetch('/.auth/me',{cache:'no-store'});
       if(!resp.ok){ renderSignedOut(); return; }
       const info = await resp.json();
       if(info && info.clientPrincipal){
         renderSignedIn(info.clientPrincipal);
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(info.clientPrincipal)); }catch{}
       } else {
         renderSignedOut();
+        try{ localStorage.removeItem(STORAGE_KEY); }catch{}
       }
     }catch{ renderSignedOut(); }
   }
+  window.addEventListener('storage', (e)=>{
+    if(e.key === STORAGE_KEY){
+      try{ const v = e.newValue && JSON.parse(e.newValue); if(v) renderSignedIn(v); else renderSignedOut(); }catch{}
+    }
+  });
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', load); else load();
 })();
