@@ -1,4 +1,4 @@
-name: Azure Static Web Apps CI/CD
+name: Azure Static Web Apps CI/CD (External Functions)
 
 on:
   push:
@@ -27,7 +27,6 @@ jobs:
 
       - name: Build (noop static)
         run: echo "No build step for static assets"
-
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -35,7 +34,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
-          api_location: "api"
+          api_location: "" # Empty: external/managed functions handled separately
           output_location: "/"
         env:
           STORAGE_ACCOUNT_BLOB_URL: https://madeenasaad467c.blob.core.windows.net
