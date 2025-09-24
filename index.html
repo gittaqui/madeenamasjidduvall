@@ -339,8 +339,12 @@
 
                 <!-- Template Javascript -->
                 <script src="js/main.js"></script>
-                <script src="js/config.js"></script>
-                <script src="js/schedule.js"></script>
+                                <script src="js/config.js"></script>
+                                <script>
+                                    // TEMP: Override for BYO Function API until SWA linking is complete.
+                                    window.PRAYER_TIMES_API_BASE = 'https://madeena-func-api.azurewebsites.net';
+                                </script>
+                                <script src="js/schedule.js"></script>
                 <script src="js/events-teaser.js"></script>
                 <script>
                     // PWA: Register service worker

@@ -1,6 +1,7 @@
 // Build vertical schedule from prayer-times.json and compute countdown to next iqamah
 (function(){
-  const URL = '/api/prayer-times';
+  // Allow overriding API base (e.g., when BYO Azure Function not yet linked) via global window.PRAYER_TIMES_API_BASE
+  const URL = (window.PRAYER_TIMES_API_BASE || '') + '/api/prayer-times';
   const PT = 'America/Los_Angeles';
   function getPTYMD(){
     const now = new Date();
