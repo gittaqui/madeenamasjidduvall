@@ -173,8 +173,7 @@
     const key = MONTH_INPUT.value.trim();
     if(key && /^\d{4}-\d{2}$/.test(key)) mergeOverride(key);
     try{
-      const base = (window.PRAYER_TIMES_API_BASE || '');
-      const resp = await fetch(base + '/api/prayer-times',{
+      const resp = await fetch('/api/prayer-times',{
         method:'POST',
         headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify(data)

@@ -1,6 +1,6 @@
 {
-  "updated": "2025-09-19",
-  "note": "Times subject to change. Check announcements for updates.",
+  "updated": "2025-09-24",
+  "note": "Times subject to change. Managed Functions fallback copy (no persistence unless external storage reconnected).",
   "sunrise": "06:50 AM",
   "adhan": {
     "fajr": "05:26 AM",

@@ -58,11 +58,18 @@ module.exports = async function (context, req) {
         }
       }
       if (!json) {
-        // Fall back to local file in repo if present (for local dev)
-        try {
-          const fallback = require('../../prayer-times.json');
-          return (context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: fallback });
-        } catch {}
+        // Fall back to local file (integrated functions deployment) if present
+        const fallbackPaths = [
+          '../../prayer-times.json',
+          '../prayer-times.json',
+          './prayer-times.json'
+        ];
+        for (const p of fallbackPaths) {
+          try {
+            const fallback = require(p);
+            return (context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: fallback });
+          } catch {}
+        }
         return (context.res = { status: 404, body: 'prayer-times.json not found' });
       }
       context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: json };
