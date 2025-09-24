@@ -1,5 +1,5 @@
 {
-  "scriptFile": "prayer-times/index.js",
+  "scriptFile": "index.js",
   "bindings": [
     {
       "authLevel": "anonymous",

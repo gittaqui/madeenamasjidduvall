@@ -1,5 +1,5 @@
 {
-  "scriptFile": "me/index.js",
+  "scriptFile": "index.js",
   "bindings": [
     {
       "authLevel": "anonymous",
