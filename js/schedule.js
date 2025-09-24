@@ -98,9 +98,8 @@
   }
   const ROWS = [
     { key: 'fajr', label: 'Fajr' },
-    { key: 'sunrise', label: 'Sunrise', iqamah: false },
     { key: 'dhuhr', label: 'Dhuhr' },
-  { key: 'asr', label: 'Asr' },
+    { key: 'asr', label: 'Asr' },
     { key: 'maghrib', label: 'Maghrib' },
     { key: 'isha', label: 'Isha' }
   ];
@@ -118,6 +117,16 @@
     const m = Math.floor((s%3600)/60);
     const ss = s%60;
     return `${pad(h)}:${pad(m)}:${pad(ss)}`;
+  }
+  function splitHMS(ms){
+    if(ms == null || isNaN(ms) || ms <= 0){
+      return { h:'00', m:'00', s:'00' };
+    }
+    const totalSeconds = Math.floor(ms/1000);
+    const h = Math.floor(totalSeconds/3600);
+    const m = Math.floor((totalSeconds%3600)/60);
+    const s = totalSeconds%60;
+    return { h: pad(h), m: pad(m), s: pad(s) };
   }
   function nextIqamah(data){
     // Build a list of future iqamah Date objects
@@ -155,7 +164,7 @@
       const iqamahStr = (r.iqamah === false) ? '' : (data.iqamah && data.iqamah[r.key]) || '';
       const tr = document.createElement('tr');
       const th = document.createElement('th'); th.textContent = r.label; tr.appendChild(th);
-      const tdAdhan = document.createElement('td'); tdAdhan.textContent = adhanStr || (r.key==='sunrise' ? (data.sunrise || '') : ''); tr.appendChild(tdAdhan);
+  const tdAdhan = document.createElement('td'); tdAdhan.textContent = adhanStr || ''; tr.appendChild(tdAdhan);
       const tdIqamah = document.createElement('td'); tdIqamah.textContent = iqamahStr; tr.appendChild(tdIqamah);
       tbody.appendChild(tr);
     });
@@ -179,18 +188,62 @@
     buildRows(data);
     buildJumuah(data);
     document.getElementById('now-datetime').textContent = fmtNow();
+    // mirror local time into #localtime if new widget exists
+    const localEl = document.getElementById('localtime');
+    if(localEl) localEl.textContent = fmtNow();
     const next = nextIqamah(data);
     if(next){
-  document.getElementById('next-iqamah-name').textContent = `${next.label} iqamah`;
-  const etaEl = document.getElementById('next-iqamah-eta');
-  etaEl.textContent = diffHHMMSSFromMs(next.ms);
-  etaEl.title = `at ${next.iqamah}`;
+      const legacyNameEl = document.getElementById('next-iqamah-name');
+      const newNameEl = document.getElementById('next-iqamah');
+      const targetNameEl = newNameEl || legacyNameEl;
+      if(targetNameEl) targetNameEl.textContent = `${next.label} iqamah`;
+      const etaEl = document.getElementById('next-iqamah-eta');
+      const parts = splitHMS(next.ms);
+      if(etaEl){ etaEl.textContent = `${parts.h}:${parts.m}:${parts.s}`; etaEl.title = `at ${next.iqamah}`; }
+      // populate new split countdown parts if present
+      const cdH = document.getElementById('cd-hours');
+      const cdM = document.getElementById('cd-minutes');
+      const cdS = document.getElementById('cd-seconds');
+      if(cdH) cdH.textContent = parts.h;
+      if(cdM) cdM.textContent = parts.m;
+      if(cdS) cdS.textContent = parts.s;
     } else {
-      document.getElementById('next-iqamah-name').textContent = '—';
-      document.getElementById('next-iqamah-eta').textContent = '—';
+      const legacyNameEl = document.getElementById('next-iqamah-name');
+      const newNameEl = document.getElementById('next-iqamah');
+      if(legacyNameEl) legacyNameEl.textContent = '—';
+      if(newNameEl) newNameEl.textContent = '—';
+      const etaEl = document.getElementById('next-iqamah-eta');
+      if(etaEl) etaEl.textContent = '—';
+      ['cd-hours','cd-minutes','cd-seconds'].forEach(id=>{ const el = document.getElementById(id); if(el) el.textContent = '00'; });
     }
     const note = document.getElementById('prayer-note');
     if(data.note && note) note.textContent = data.note;
+    // Sun times fetch (only once per applyData call for current day)
+    fetchSunTimes();
+  }
+  let sunTimesFetched = false;
+  async function fetchSunTimes(){
+    if(sunTimesFetched) return; // avoid repeated fetches during countdown
+    sunTimesFetched = true;
+    const sunriseEl = document.getElementById('sunrise-display');
+    const sunsetEl = document.getElementById('sunset-display');
+    try {
+      const lat = 47.742; // Duvall, WA
+      const lng = -121.985;
+      const resp = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&formatted=0`);
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      const obj = await resp.json();
+      if(obj.status !== 'OK') throw new Error('API status '+obj.status);
+      const to12 = dt=>{ let h=dt.getHours(); const m=dt.getMinutes(); const ap=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${String(m).padStart(2,'0')} ${ap}`; };
+      const sr = new Date(obj.results.sunrise);
+      const ss = new Date(obj.results.sunset);
+      if(sunriseEl) sunriseEl.textContent = to12(sr);
+      if(sunsetEl) sunsetEl.textContent = to12(ss);
+    }catch(e){
+      if(sunriseEl) sunriseEl.textContent = 'n/a';
+      if(sunsetEl) sunsetEl.textContent = 'n/a';
+      console.warn('Sun times fetch failed', e);
+    }
   }
   let dayOffset = 0; // 0 = today, -1 = yesterday, +1 = tomorrow
   function formatPTDate(y,m,d){
@@ -270,15 +323,42 @@
           const nameEl = document.getElementById('next-iqamah-name');
           const etaEl = document.getElementById('next-iqamah-eta');
           if(res){
-            nameEl.textContent = `${res.label} iqamah`;
-            etaEl.textContent = diffHHMMSSFromMs(res.ms);
-            etaEl.title = `at ${res.iqamah}`;
+            const newNameCombined = `${res.label} iqamah`;
+            const legacyNameEl = document.getElementById('next-iqamah-name');
+            const newNameEl = document.getElementById('next-iqamah');
+            const targetNameEl = newNameEl || legacyNameEl;
+            if(targetNameEl && targetNameEl.textContent !== newNameCombined){
+              targetNameEl.textContent = newNameCombined;
+              targetNameEl.classList.add('pulsing');
+              setTimeout(()=> targetNameEl.classList.remove('pulsing'), 3500);
+            }
+            const parts = splitHMS(res.ms);
+            const newEta = `${parts.h}:${parts.m}:${parts.s}`;
+            if(etaEl && etaEl.textContent !== newEta){
+              etaEl.textContent = newEta;
+              etaEl.classList.add('updated');
+              setTimeout(()=> etaEl.classList.remove('updated'), 450);
+              etaEl.title = `at ${res.iqamah}`;
+            }
+            // update split countdown pieces
+            const cdH = document.getElementById('cd-hours');
+            const cdM = document.getElementById('cd-minutes');
+            const cdS = document.getElementById('cd-seconds');
+            if(cdH && cdH.textContent !== parts.h){ cdH.textContent = parts.h; cdH.classList.add('updated'); setTimeout(()=>cdH.classList.remove('updated'),450); }
+            if(cdM && cdM.textContent !== parts.m){ cdM.textContent = parts.m; cdM.classList.add('updated'); setTimeout(()=>cdM.classList.remove('updated'),450); }
+            if(cdS && cdS.textContent !== parts.s){ cdS.textContent = parts.s; cdS.classList.add('updated'); setTimeout(()=>cdS.classList.remove('updated'),450); }
           } else {
-            nameEl.textContent = '—';
-            etaEl.textContent = '—';
-            etaEl.removeAttribute('title');
+            if(nameEl) nameEl.textContent = '—';
+            const newNameEl = document.getElementById('next-iqamah');
+            if(newNameEl) newNameEl.textContent = '—';
+            if(etaEl){ etaEl.textContent = '—'; etaEl.removeAttribute('title'); }
+            ['cd-hours','cd-minutes','cd-seconds'].forEach(id=>{ const el = document.getElementById(id); if(el) el.textContent = '00'; });
           }
-          document.getElementById('now-datetime').textContent = fmtNow();
+          const nowStr = fmtNow();
+          const nowEl = document.getElementById('now-datetime');
+          if(nowEl) nowEl.textContent = nowStr;
+          const localEl = document.getElementById('localtime');
+          if(localEl) localEl.textContent = nowStr;
         }
       }, 1000);
       // bind nav buttons

@@ -361,113 +361,37 @@
   // Kick off auth status detection
   checkAdminRole().then(()=> showPrincipalDebug());
 
-  /* ================= Sunrise Auto-Fetch ================= */
+  // Sunrise fetch (Duvall, WA) using sunrise-sunset.org
   const btnRefreshSun = document.getElementById('btn-refresh-sun');
-  const sunriseBadge = document.getElementById('sunrise-badge');
   async function fetchSunrise(){
-    if(!sunriseBadge) return;
-    sunriseBadge.textContent = 'Loading…';
-    sunriseBadge.classList.remove('bg-warning','bg-danger');
-    sunriseBadge.classList.add('bg-info');
-    try{
-      // Assumption: Mosque location coordinates (adjust as needed)
-      const lat = 47.744; // TODO: update with real latitude
-      const lng = -121.985; // TODO: update with real longitude
+    if(!btnRefreshSun) return;
+    const original = btnRefreshSun.textContent;
+    btnRefreshSun.disabled = true; btnRefreshSun.textContent = 'Fetching…';
+    try {
+      const lat = 47.742; // Duvall approximate latitude
+      const lng = -121.985; // Duvall approximate longitude
       const resp = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&formatted=0`);
       if(!resp.ok) throw new Error('HTTP '+resp.status);
-      const obj = await resp.json();
-      if(!obj || obj.status !== 'OK' || !obj.results) throw new Error('Invalid API response');
-      const sunriseISO = obj.results.sunrise; // UTC ISO
-      const localDate = new Date(sunriseISO);
-      const hhmm = to12h(localDate);
-      data.sunrise = hhmm;
-      sunriseBadge.textContent = hhmm;
-      sunriseBadge.classList.remove('bg-info');
-      sunriseBadge.classList.add('bg-success');
-      // Update any preview
-      buildPreviewGrid();
+      const body = await resp.json();
+      if(body.status !== 'OK') throw new Error('API status '+body.status);
+      const sunriseUTC = new Date(body.results.sunrise);
+      // Convert to local time string 12h
+      const h12 = (dt)=>{ let h=dt.getHours(), m=dt.getMinutes(); const ap=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${String(m).padStart(2,'0')} ${ap}`; };
+      data.sunrise = h12(sunriseUTC);
+      console.log('[sunrise] Updated sunrise to', data.sunrise);
+      btnRefreshSun.textContent = 'Sunrise: '+data.sunrise;
     }catch(err){
-      sunriseBadge.textContent = 'Error';
-      sunriseBadge.classList.remove('bg-info');
-      sunriseBadge.classList.add('bg-danger');
       console.error('[sunrise] fetch failed', err);
+      btnRefreshSun.textContent = 'Sunrise Error';
+      setTimeout(()=> btnRefreshSun.textContent = original, 3000);
+    }finally{
+      btnRefreshSun.disabled = false;
     }
   }
   if(btnRefreshSun) btnRefreshSun.addEventListener('click', fetchSunrise);
-
-  function to12h(d){
-    let h = d.getHours();
-    const m = d.getMinutes();
-    const ampm = h>=12 ? 'PM':'AM';
-    h = h%12; if(h===0) h=12;
-    return `${h}:${String(m).padStart(2,'0')} ${ampm}`;
-  }
-
-  /* ================= Preview Grid ================= */
-  const previewGridHost = document.getElementById('preview-grid');
-  const btnRefreshPreview = document.getElementById('btn-refresh-preview');
-  function currentRoot(){
-    return {
-      fajr: { adhan: (data.adhan||{}).fajr||'', iqamah: (data.iqamah||{}).fajr||'' },
-      dhuhr: { adhan: (data.adhan||{}).dhuhr||'', iqamah: (data.iqamah||{}).dhuhr||'' },
-      asr: { adhan: (data.adhan||{}).asr||'', iqamah: (data.iqamah||{}).asr||'' },
-      maghrib: { adhan: (data.adhan||{}).maghrib||'', iqamah: (data.iqamah||{}).maghrib||'' },
-      isha: { adhan: (data.adhan||{}).isha||'', iqamah: (data.iqamah||{}).isha||'' }
-    };
-  }
-  function readWorkingValues(){
-    // Reads current form (root override fields with prefix ov-)
-    const get = id=> (document.getElementById(id) || {}).value || '';
-    return {
-      fajr: { adhan: get('ov-adhan-fajr'), iqamah: get('ov-iqamah-fajr') },
-      dhuhr: { adhan: get('ov-adhan-dhuhr'), iqamah: get('ov-iqamah-dhuhr') },
-      asr: { adhan: get('ov-adhan-asr'), iqamah: get('ov-iqamah-asr') },
-      maghrib: { adhan: get('ov-adhan-maghrib'), iqamah: get('ov-iqamah-maghrib') },
-      isha: { adhan: get('ov-adhan-isha'), iqamah: get('ov-iqamah-isha') }
-    };
-  }
-  function buildPreviewGrid(){
-    if(!previewGridHost) return;
-    const work = readWorkingValues();
-    // Show 4 core prayers in 2x2 (Fajr, Dhuhr, Asr, Maghrib). Isha can appear on large screens or tooltip.
-    const order = ['fajr','dhuhr','asr','maghrib'];
-    previewGridHost.innerHTML = '';
-    order.forEach(name=>{
-      const rec = work[name];
-      const div = document.createElement('div');
-      div.className = 'preview-item';
-      div.innerHTML = `
-        <div class="name">${name.charAt(0).toUpperCase()+name.slice(1)}</div>
-        <div class="times">${rec.adhan||'--'} / <strong>${rec.iqamah||'--'}</strong></div>
-      `;
-      previewGridHost.appendChild(div);
-    });
-    // Optionally append sunrise badge mini or Isha below
-    if(data.sunrise){
-      const sunriseDiv = document.createElement('div');
-      sunriseDiv.className = 'preview-item';
-      sunriseDiv.innerHTML = `<div class="name">Sunrise</div><div class="times">${data.sunrise}</div>`;
-      previewGridHost.appendChild(sunriseDiv);
-    }
-  // Update dedicated Fajr 2x2 grid if present
-  const fgAdhan = document.getElementById('fg-adhan');
-  const fgIqamah = document.getElementById('fg-iqamah');
-  if(fgAdhan) fgAdhan.textContent = work.fajr.adhan || '--';
-  if(fgIqamah) fgIqamah.textContent = work.fajr.iqamah || '--';
-  }
-  if(btnRefreshPreview) btnRefreshPreview.addEventListener('click', buildPreviewGrid);
-  // Auto update preview on input changes (debounced)
-  let previewTimer = null;
-  document.addEventListener('input', (e)=>{
-    if(!(e.target instanceof HTMLElement)) return;
-    if(!e.target.closest('#root-override-section')) return; // scope limit
-    clearTimeout(previewTimer);
-    previewTimer = setTimeout(buildPreviewGrid, 300);
-  });
-
-  // Initial preview + sunrise fetch
-  buildPreviewGrid();
+  // Initial auto fetch once per page load
   fetchSunrise();
+
 })();
 
 function firstNameOf(details){

@@ -29,6 +29,23 @@
 body { font-family: var(--font-body); }
 h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 
+/* Prayer schedule animations */
+@keyframes fadeSlideIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@keyframes pulseGlow { 0%{ box-shadow:0 0 0 0 rgba(0,122,51,.55);} 70%{ box-shadow:0 0 0 6px rgba(0,122,51,0);} 100%{ box-shadow:0 0 0 0 rgba(0,122,51,0);} }
+
+#prayer-schedule table tbody tr { animation: fadeSlideIn .55s ease both; }
+#prayer-schedule table tbody tr:nth-child(1){ animation-delay:.05s; }
+#prayer-schedule table tbody tr:nth-child(2){ animation-delay:.10s; }
+#prayer-schedule table tbody tr:nth-child(3){ animation-delay:.15s; }
+#prayer-schedule table tbody tr:nth-child(4){ animation-delay:.20s; }
+#prayer-schedule table tbody tr:nth-child(5){ animation-delay:.25s; }
+
+#next-iqamah-name.pulsing { animation: pulseGlow 3s ease-in-out infinite; }
+
+/* Smooth number flip for countdown */
+#next-iqamah-eta { transition: color .4s ease, transform .4s ease; }
+#next-iqamah-eta.updated { color: var(--primary); transform: scale(1.07); }
+
 /* Utilities moved from inline styles */
 .max-w-700 { max-width: 700px; }
 .quote-badge-offset { top: 25px; left: -25px; }
