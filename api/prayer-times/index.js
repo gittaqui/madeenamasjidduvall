@@ -1,4 +1,4 @@
-const { getBlobClient } = require('../shared/blobClient');
+const { getStorageRefs } = require('../shared/blobClient');
 
 async function readBlobJson(blobClient) {
   const exists = await blobClient.exists();
@@ -40,9 +40,9 @@ async function streamToBuffer(readable) {
 module.exports = async function (context, req) {
   const method = (req.method || 'GET').toUpperCase();
   // Attempt to initialize blob client; allow fallback if storage not configured
-  let blobClient = null;
+  let storage = null;
   try {
-    blobClient = getBlobClient();
+    storage = getStorageRefs();
   } catch (e) {
     context.log('Blob client initialization failed (will use local fallback if possible):', e.message);
   }
@@ -50,9 +50,9 @@ module.exports = async function (context, req) {
   if (method === 'GET') {
     try {
       let json = null;
-      if (blobClient) {
+    if (storage && storage.blobClient) {
         try {
-          json = await readBlobJson(blobClient);
+      json = await readBlobJson(storage.blobClient);
         } catch (inner) {
           context.log('Blob read error, will attempt local fallback:', inner.message);
         }
@@ -70,7 +70,8 @@ module.exports = async function (context, req) {
             return (context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: fallback });
           } catch {}
         }
-        return (context.res = { status: 404, body: 'prayer-times.json not found' });
+  context.log('No blob + no local fallback prayer-times.json found');
+  return (context.res = { status: 404, body: 'prayer-times.json not found' });
       }
       context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: json };
     } catch (err) {
@@ -87,7 +88,7 @@ module.exports = async function (context, req) {
       context.res = { status: 401, body: 'Unauthorized' };
       return;
     }
-    if (!blobClient) {
+    if (!storage || !storage.blobClient) {
       context.res = { status: 503, body: 'Storage not configured on server' };
       return;
     }
@@ -97,8 +98,16 @@ module.exports = async function (context, req) {
         context.res = { status: 400, body: 'Invalid JSON' };
         return;
       }
-      await writeBlobJson(blobClient, body);
-      context.res = { status: 200, body: 'OK' };
+      // Basic validation to avoid wiping existing schedule with empty object
+      const hasContent = !!(body.months && Object.keys(body.months).length) || !!(body.days && Object.keys(body.days).length);
+      if (!hasContent) {
+        context.res = { status: 400, body: 'Refusing to save empty schedule (no months or days provided).' };
+        return;
+      }
+      // Ensure container exists
+      try { await storage.containerClient.createIfNotExists({ access: 'private' }); } catch {}
+  await writeBlobJson(storage.blobClient, body);
+      context.res = { status: 200, body: JSON.stringify({ status: 'OK', container: storage.containerName, blob: storage.blobName, months: Object.keys(body.months||{}).length, days: Object.keys(body.days||{}).length }) };
     } catch (err) {
       context.log('POST error', err.message);
       context.res = { status: 500, body: 'Failed to save prayer times' };
