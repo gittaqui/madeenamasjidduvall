@@ -1,6 +1,7 @@
 {
   "routes": [
   { "route": "/admin-schedule.html", "allowedRoles": ["authenticated"] },
+  { "route": "/debug-roles.html", "allowedRoles": ["anonymous"] },
     { "route": "/api/prayer-times", "methods": ["GET"], "allowedRoles": ["anonymous"] },
     { "route": "/api/prayer-times", "methods": ["POST"], "allowedRoles": ["admin"] },
     { "route": "/api/prayer-times", "methods": ["OPTIONS"], "allowedRoles": ["anonymous"] },
