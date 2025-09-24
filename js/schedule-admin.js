@@ -173,6 +173,13 @@
   async function saveToServer(){
     const key = MONTH_INPUT.value.trim();
     if(key && /^\d{4}-\d{2}$/.test(key)) mergeOverride(key);
+    // Pre-check admin role to avoid auth redirect causing fetch network/CORS error
+    const isAdmin = await checkAdminRole();
+    if(!isAdmin){
+      // Navigate to login explicitly
+      location.href = '/.auth/login/aad?post_login_redirect_uri=/admin-schedule.html';
+      return;
+    }
     try{
       const resp = await fetch('/api/prayer-times',{
         method:'POST',
@@ -204,8 +211,17 @@
       }
       alert('Saved successfully');
     }catch(err){
-      alert('Save failed: network or CORS error');
+      alert('Save failed: network error (possibly transient). If you were just redirected or lost connectivity, retry.');
     }
+  }
+  async function checkAdminRole(){
+    try{
+      const resp = await fetch('/.auth/me', { cache: 'no-store' });
+      if(!resp.ok) return false;
+      const info = await resp.json();
+      const roles = (info && info.clientPrincipal && info.clientPrincipal.userRoles) || [];
+      return roles.includes('admin');
+    }catch{ return false; }
   }
   async function fetchFromServer(){
     try{
