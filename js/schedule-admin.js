@@ -179,18 +179,31 @@
         body: JSON.stringify(data)
       });
       if(resp.status === 401){
-        // trigger SWA login (AAD by default in staticwebapp.config.json)
+        // Not authenticated for admin role – redirect to login
         location.href = '/.auth/login/aad?post_login_redirect_uri=/admin-schedule.html';
+        return;
+      }
+      if(resp.status === 404){
+        alert('Save failed: API endpoint not found. Likely the Functions API has not been deployed yet. Ensure GitHub Action ran successfully or manual deploy completed.');
+        return;
+      }
+      if(resp.status === 405){
+        alert('Save failed: Method not allowed. This often means the API function is missing or not built. Re-deploy the Functions API.');
+        return;
+      }
+      if(resp.status === 503){
+        const txt = await resp.text();
+        alert('Save failed (storage unavailable): ' + txt + '\nCheck storage app settings and managed identity role.');
         return;
       }
       if(!resp.ok){
         const txt = await resp.text();
-        alert('Save failed: ' + txt);
-      } else {
-        alert('Saved successfully');
+        alert('Save failed ('+resp.status+'): ' + txt);
+        return;
       }
+      alert('Saved successfully');
     }catch(err){
-      alert('Save failed');
+      alert('Save failed: network or CORS error');
     }
   }
   function importJson(){ fileInput.click(); }
@@ -246,3 +259,4 @@
   if(RANGE_END) RANGE_END.value = d.toISOString().slice(0,10);
   fillOverride(MONTH_INPUT.value.trim());
 })();
+
