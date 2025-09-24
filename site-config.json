@@ -1,0 +1,19 @@
+{
+  "contact": {
+    "phone": "+1 (425) 555-1234",
+    "email": "info@madeenamasjidduvall.org",
+    "address": "1600 Main St, Duvall, WA 98019"
+  },
+  "social": {
+    "facebook": "https://facebook.com/madeenamasjidduvall",
+    "twitter": "https://twitter.com/madeenamasjid",
+    "instagram": "https://instagram.com/madeenamasjidduvall",
+    "linkedin": "https://linkedin.com/company/madeenamasjidduvall"
+  },
+  "features": {
+    "flashBanner": true
+  },
+  "announcements": {
+    "flashText": "Jumu'ah times updated today. Please arrive early for parking."
+  }
+}

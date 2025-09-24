@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+:root {
+  /* Brand green (updated) */
+  --primary: #007A33;
+  --primary-contrast: #ffffff;
+  --font-body: 'Poppins', Arial, sans-serif;
+  --font-heading: 'Poppins', Arial, sans-serif;
+}
+
+/* Color utilities */
+.text-primary { color: var(--primary) !important; }
+.bg-primary { background-color: var(--primary) !important; }
+.btn-primary {
+  color: var(--primary-contrast) !important;
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+.btn-outline-primary {
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+.btn-outline-primary:hover {
+  color: var(--primary-contrast) !important;
+  background-color: var(--primary) !important;
+}
+
+/* Typography */
+body { font-family: var(--font-body); }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
+
+/* Utilities moved from inline styles */
+.max-w-700 { max-width: 700px; }
+.quote-badge-offset { top: 25px; left: -25px; }
+.max-w-220 { max-width: 220px; }
+
+/* Navbar branding and links in Madeena green */
+.navbar .navbar-brand h1 { color: var(--primary) !important; }
+.navbar .nav-link { color: var(--primary) !important; }
+.navbar .nav-link:hover,
+.navbar .nav-link:focus,
+.navbar .nav-link.active { color: var(--primary) !important; text-decoration: underline; }

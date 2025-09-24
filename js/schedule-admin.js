@@ -1,0 +1,248 @@
+(function(){
+  const MONTH_INPUT = document.getElementById('month');
+  const RANGE_START = document.getElementById('range-start');
+  const RANGE_END = document.getElementById('range-end');
+  const fileInput = document.getElementById('file-input');
+  const btnLoad = document.getElementById('btn-load-json');
+  const btnFillMonthFromDefaults = document.getElementById('btn-use-defaults');
+  const btnApplyRange = document.getElementById('btn-apply-range');
+  const btnDownload = document.getElementById('btn-download');
+  const btnSaveServer = document.getElementById('btn-save-server');
+  const btnReset = document.getElementById('btn-reset');
+  const btnPrevMonth = document.getElementById('btn-range-prev-month');
+  const btnThisMonth = document.getElementById('btn-range-this-month');
+  const btnNextMonth = document.getElementById('btn-range-next-month');
+  const presetMonthInput = document.getElementById('preset-month');
+  const btnSetMonth = document.getElementById('btn-range-set-month');
+
+  let data = {
+    updated: new Date().toISOString().slice(0,10),
+    note: '',
+    sunrise: '',
+    adhan: {},
+    iqamah: {},
+    jumuah: [],
+    months: {},
+    days: {}
+  };
+
+  function byId(id){ return document.getElementById(id); }
+  function assignFields(prefix){
+    const obj = {
+      sunrise: byId(`${prefix}-sunrise`).value.trim(),
+      note: byId(`${prefix}-note`).value.trim(),
+      adhan: {
+        fajr: byId(`${prefix}-adhan-fajr`).value.trim(),
+        dhuhr: byId(`${prefix}-adhan-dhuhr`).value.trim(),
+        asr: byId(`${prefix}-adhan-asr`).value.trim(),
+        asrHanafi: byId(`${prefix}-adhan-asrHanafi`).value.trim(),
+        maghrib: byId(`${prefix}-adhan-maghrib`).value.trim(),
+        isha: byId(`${prefix}-adhan-isha`).value.trim()
+      },
+      iqamah: {
+        fajr: byId(`${prefix}-iqamah-fajr`).value.trim(),
+        dhuhr: byId(`${prefix}-iqamah-dhuhr`).value.trim(),
+        asr: byId(`${prefix}-iqamah-asr`).value.trim(),
+        asrHanafi: byId(`${prefix}-iqamah-asrHanafi`).value.trim(),
+        maghrib: byId(`${prefix}-iqamah-maghrib`).value.trim(),
+        isha: byId(`${prefix}-iqamah-isha`).value.trim()
+      },
+      jumuah: collectJumuah(prefix)
+    };
+    return obj;
+  }
+  function collectJumuah(prefix){
+    const map = { ov: 'ov-jumuah', rg: 'rg-jumuah' };
+    const host = byId(map[prefix] || 'ov-jumuah');
+    return Array.from(host.querySelectorAll('.j-row')).map(row => ({
+      title: row.querySelector('.j-title').value.trim(),
+      start: row.querySelector('.j-start').value.trim(),
+      end: row.querySelector('.j-end').value.trim()
+    })).filter(x => x.title || x.start || x.end);
+  }
+  function addJumuahRow(prefix, val={}){
+    const host = byId(prefix === 'ov' ? 'ov-jumuah' : 'rg-jumuah');
+    const div = document.createElement('div');
+    div.className = 'j-row d-flex gap-2';
+    div.innerHTML = `
+      <input class="form-control j-title" placeholder="Title (e.g., 1st Jumu'ah)" title="Jumu'ah title" value="${val.title||''}">
+      <input class="form-control j-start" placeholder="Start (e.g., 01:00 PM)" title="Start time" value="${val.start||''}">
+      <input class="form-control j-end" placeholder="End (e.g., 01:45 PM)" title="End time" value="${val.end||''}">
+      <button class="btn btn-outline-danger" type="button">Remove</button>
+    `;
+    div.querySelector('button').addEventListener('click', ()=> div.remove());
+    host.appendChild(div);
+  }
+  function monthBounds(year, monthIdx){
+    const start = new Date(Date.UTC(year, monthIdx, 1));
+    const end = new Date(Date.UTC(year, monthIdx + 1, 0));
+    const toLocalISO = (d)=> new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toISOString().slice(0,10);
+    return { start: toLocalISO(start), end: toLocalISO(end) };
+  }
+  function setRangeTo(year, monthIdx){
+    const { start, end } = monthBounds(year, monthIdx);
+    if(RANGE_START) RANGE_START.value = start;
+    if(RANGE_END) RANGE_END.value = end;
+  }
+  function fillMonthFromDefaults(){
+    // Prefill the month override UI with root defaults
+    byId('ov-sunrise').value = data.sunrise || '';
+    byId('ov-note').value = data.note || '';
+    byId('ov-adhan-fajr').value = (data.adhan||{}).fajr || '';
+    byId('ov-adhan-dhuhr').value = (data.adhan||{}).dhuhr || '';
+    byId('ov-adhan-asr').value = (data.adhan||{}).asr || '';
+    byId('ov-adhan-asrHanafi').value = (data.adhan||{}).asrHanafi || '';
+    byId('ov-adhan-maghrib').value = (data.adhan||{}).maghrib || '';
+    byId('ov-adhan-isha').value = (data.adhan||{}).isha || '';
+    byId('ov-iqamah-fajr').value = (data.iqamah||{}).fajr || '';
+    byId('ov-iqamah-dhuhr').value = (data.iqamah||{}).dhuhr || '';
+    byId('ov-iqamah-asr').value = (data.iqamah||{}).asr || '';
+    byId('ov-iqamah-asrHanafi').value = (data.iqamah||{}).asrHanafi || '';
+    byId('ov-iqamah-maghrib').value = (data.iqamah||{}).maghrib || '';
+    byId('ov-iqamah-isha').value = (data.iqamah||{}).isha || '';
+    const host = byId('ov-jumuah'); host.innerHTML='';
+    (data.jumuah||[]).forEach(item=> addJumuahRow('ov', item));
+  }
+  function fillOverride(key){
+    const ov = (data.months && data.months[key]) || {};
+    byId('ov-sunrise').value = ov.sunrise || '';
+    byId('ov-note').value = ov.note || '';
+    byId('ov-adhan-fajr').value = (ov.adhan||{}).fajr || '';
+    byId('ov-adhan-dhuhr').value = (ov.adhan||{}).dhuhr || '';
+    byId('ov-adhan-asr').value = (ov.adhan||{}).asr || '';
+    byId('ov-adhan-asrHanafi').value = (ov.adhan||{}).asrHanafi || '';
+    byId('ov-adhan-maghrib').value = (ov.adhan||{}).maghrib || '';
+    byId('ov-adhan-isha').value = (ov.adhan||{}).isha || '';
+    byId('ov-iqamah-fajr').value = (ov.iqamah||{}).fajr || '';
+    byId('ov-iqamah-dhuhr').value = (ov.iqamah||{}).dhuhr || '';
+    byId('ov-iqamah-asr').value = (ov.iqamah||{}).asr || '';
+    byId('ov-iqamah-asrHanafi').value = (ov.iqamah||{}).asrHanafi || '';
+    byId('ov-iqamah-maghrib').value = (ov.iqamah||{}).maghrib || '';
+    byId('ov-iqamah-isha').value = (ov.iqamah||{}).isha || '';
+    const host = byId('ov-jumuah'); host.innerHTML='';
+    (ov.jumuah||[]).forEach(item=> addJumuahRow('ov', item));
+  }
+  // daily fill removed with new date-range workflow
+  function mergeOverride(key){
+    const ov = assignFields('ov');
+    if(!data.months) data.months = {};
+    data.months[key] = {
+      sunrise: ov.sunrise || undefined,
+      note: ov.note || undefined,
+      adhan: ov.adhan,
+      iqamah: ov.iqamah,
+      jumuah: ov.jumuah
+    };
+  }
+  function applyRange(){
+    const start = RANGE_START.value.trim();
+    const endRaw = (RANGE_END.value || '').trim();
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(start)) return alert('Enter a valid start date (YYYY-MM-DD)');
+    const end = endRaw && /^\d{4}-\d{2}-\d{2}$/.test(endRaw) ? endRaw : start;
+    const vals = assignFields('rg');
+    const startDate = new Date(start+'T00:00:00');
+    const endDate = new Date(end+'T00:00:00');
+    if(startDate > endDate) return alert('Start date must be on or before end date');
+    if(!data.days) data.days = {};
+    let count = 0;
+    for(let d = new Date(startDate); d <= endDate; d.setDate(d.getDate()+1)){
+      const key = d.toISOString().slice(0,10);
+      data.days[key] = {
+        sunrise: vals.sunrise || undefined,
+        note: vals.note || undefined,
+        adhan: JSON.parse(JSON.stringify(vals.adhan)),
+        iqamah: JSON.parse(JSON.stringify(vals.iqamah)),
+        jumuah: Array.isArray(vals.jumuah) ? JSON.parse(JSON.stringify(vals.jumuah)) : []
+      };
+      count++;
+    }
+    alert(`Applied to ${count} day(s)`);
+  }
+  function download(){
+    const key = MONTH_INPUT.value.trim();
+    if(key && /^\d{4}-\d{2}$/.test(key)) mergeOverride(key);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'prayer-times.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  async function saveToServer(){
+    const key = MONTH_INPUT.value.trim();
+    if(key && /^\d{4}-\d{2}$/.test(key)) mergeOverride(key);
+    try{
+      const resp = await fetch('/api/prayer-times',{
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(data)
+      });
+      if(resp.status === 401){
+        // trigger SWA login (AAD by default in staticwebapp.config.json)
+        location.href = '/.auth/login/aad?post_login_redirect_uri=/admin-schedule.html';
+        return;
+      }
+      if(!resp.ok){
+        const txt = await resp.text();
+        alert('Save failed: ' + txt);
+      } else {
+        alert('Saved successfully');
+      }
+    }catch(err){
+      alert('Save failed');
+    }
+  }
+  function importJson(){ fileInput.click(); }
+  fileInput.addEventListener('change', (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const obj = JSON.parse(reader.result);
+    data = { updated: new Date().toISOString().slice(0,10), months:{}, ...obj };
+        const key = MONTH_INPUT.value.trim();
+        if(key) fillOverride(key);
+      }catch(err){ alert('Invalid JSON'); }
+    };
+    reader.readAsText(f);
+  });
+
+  btnLoad.addEventListener('click', importJson);
+  btnFillMonthFromDefaults.addEventListener('click', fillMonthFromDefaults);
+  if(btnApplyRange) btnApplyRange.addEventListener('click', applyRange);
+  btnDownload.addEventListener('click', download);
+  btnSaveServer.addEventListener('click', saveToServer);
+  btnReset.addEventListener('click', ()=>{ location.reload(); });
+  byId('ov-add-jumuah').addEventListener('click', ()=> addJumuahRow('ov'));
+  byId('rg-add-jumuah').addEventListener('click', ()=> addJumuahRow('rg'));
+  MONTH_INPUT.addEventListener('change', ()=> fillOverride(MONTH_INPUT.value.trim()));
+  if(btnThisMonth) btnThisMonth.addEventListener('click', ()=>{
+    const d = new Date(); setRangeTo(d.getFullYear(), d.getMonth());
+  });
+  if(btnPrevMonth) btnPrevMonth.addEventListener('click', ()=>{
+    const d = new Date(); const y = d.getFullYear(); const m = d.getMonth();
+    const ym = m === 0 ? { y: y-1, m: 11 } : { y, m: m-1 };
+    setRangeTo(ym.y, ym.m);
+  });
+  if(btnNextMonth) btnNextMonth.addEventListener('click', ()=>{
+    const d = new Date(); const y = d.getFullYear(); const m = d.getMonth();
+    const ym = m === 11 ? { y: y+1, m: 0 } : { y, m: m+1 };
+    setRangeTo(ym.y, ym.m);
+  });
+  if(btnSetMonth) btnSetMonth.addEventListener('click', ()=>{
+    const v = (presetMonthInput && presetMonthInput.value || '').trim();
+    if(!/^\d{4}-\d{2}$/.test(v)) return alert('Enter month as YYYY-MM');
+    const [yy, mm] = v.split('-').map(Number);
+    setRangeTo(yy, mm-1);
+  });
+  // Auto-save removed with new range workflow
+
+  // Init with current month key
+  const d = new Date();
+  MONTH_INPUT.value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  if(RANGE_START) RANGE_START.value = d.toISOString().slice(0,10);
+  if(RANGE_END) RANGE_END.value = d.toISOString().slice(0,10);
+  fillOverride(MONTH_INPUT.value.trim());
+})();

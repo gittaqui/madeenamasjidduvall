@@ -1,0 +1,73 @@
+  =>  Template Name    : THEMosque - Mosque Website Template
+
+  =>  Template Link    : https://htmlcodex.com/mosque-website-template
+
+  =>  Template License : https://htmlcodex.com/license (or read the LICENSE.txt file)
+
+  =>  Template Author  : HTML Codex
+
+  =>  Author Website   : https://htmlcodex.com
+
+
+Manage events (simple admin)
+- Edit the file `events.json` in the project root to add, update, or remove events.
+- Fields per event:
+  - id: unique string (no spaces)
+  - title: event name
+  - date: YYYY-MM-DD (used to sort; past dates are hidden)
+  - time: HH:MM in 24h (optional)
+  - description: short details (plain text)
+  - image: path to an image (e.g., img/events-1.jpg)
+  - ctaText: button label (e.g., "Sign Up")
+  - ctaUrl: link for the button
+  - published: true/false (set false to hide without deleting)
+- The Events page (`event.html`) loads and displays upcoming published events automatically.
+
+Manage prayer times
+- Edit `prayer-times.json` in the root for daily timings and Jumu'ah info. Structure supports adhan and iqamah per prayer, plus sunrise and optional note.
+- Optional monthly schedules: add a `months` object with keys like `"2025-09"` and values containing overrides (sunrise, note, adhan{}, iqamah{}, jumuah[]). The current month overrides the root values.
+- Example structure:
+  {
+    "updated": "2025-09-18",
+    "note": "Times subject to change. Check announcements for updates.",
+    "sunrise": "06:50 AM",
+    "adhan": {
+      "fajr": "05:26 AM",
+      "dhuhr": "01:03 PM",
+      "asr": "04:29 PM",
+      "asrHanafi": "05:21 PM",
+      "maghrib": "07:15 PM",
+      "isha": "08:44 PM"
+    },
+    "iqamah": {
+      "fajr": "06:15 AM",
+      "dhuhr": "01:40 PM",
+      "asr": "06:00 PM",
+      "asrHanafi": "06:00 PM",
+      "maghrib": "07:18 PM",
+      "isha": "09:00 PM"
+    },
+    "jumuah": [
+      { "title": "1st Jumu'ah", "start": "01:00 PM", "end": "01:45 PM" }
+    ],
+    "months": {
+      "2025-09": {
+        "note": "Revised Isha for September",
+        "adhan": { "isha": "08:30 PM" },
+        "iqamah": { "isha": "08:45 PM" },
+        "jumuah": [ { "title": "1st Jumu'ah", "start": "01:00 PM", "end": "01:45 PM" } ]
+      }
+    }
+  }
+
+Admin editor (with server save option)
+ - Open `admin-schedule.html` (not linked; disallowed in robots and noindexed).
+ - Import `prayer-times.json` or start from defaults.
+ - Edit:
+   - Defaults (left)
+   - Month overrides (right): set `YYYY-MM`
+   - Specific date override (new): set `YYYY-MM-DD` and fill fields. Use "Apply to Week" to copy to the selected day and the next 6 days.
+ - Save:
+   - Download JSON (manual replace), or
+   - Save to Server (prompts for admin user/pass; writes to project root via POST /api/prayer-times).
+ Optional daily schedules: add a `days` object with keys like `"2025-09-18"` and values like above. Daily overrides take precedence over monthly.

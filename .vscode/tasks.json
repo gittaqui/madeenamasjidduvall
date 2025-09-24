@@ -1,0 +1,41 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Azure deploy (RG + Bicep)",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$ErrorActionPreference = 'Stop';",
+				"az",
+				"account",
+				"set",
+				"--subscription",
+				"44261691-88d9-4e77-9d7e-5446293eeaed",
+				";",
+				"az",
+				"group",
+				"create",
+				"-n",
+				"rg-madeena-wus2",
+				"-l",
+				"westus2",
+				";",
+				"az",
+				"deployment",
+				"group",
+				"create",
+				"-g",
+				"rg-madeena-wus2",
+				"-f",
+				"infra/main.bicep",
+				"-p",
+				"@infra/main.parameters.json",
+				"--query",
+				"{status:properties.provisioningState,outputs:properties.outputs}"
+			]
+		}
+	]
+}

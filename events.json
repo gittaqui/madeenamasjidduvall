@@ -1,0 +1,35 @@
+[
+  {
+    "id": "friday-halaqa-2025-10-03",
+    "title": "Friday Family Halaqa",
+    "date": "2025-10-03",
+    "time": "19:30",
+    "description": "Weekly family-friendly halaqa after Maghrib. All are welcome.",
+    "image": "img/events-1.jpg",
+    "ctaText": "More Info",
+    "ctaUrl": "#",
+    "published": true
+  },
+  {
+    "id": "community-cleanup-2025-10-19",
+    "title": "Community Cleanup Day",
+    "date": "2025-10-19",
+    "time": "09:00",
+    "description": "Join volunteers to help clean and beautify our neighborhood. Bring gloves if you have them.",
+    "image": "img/events-2.jpg",
+    "ctaText": "Sign Up",
+    "ctaUrl": "#",
+    "published": true
+  },
+  {
+    "id": "eid-al-adha-2025-06-07",
+    "title": "Eid al-Adha Prayer",
+    "date": "2025-06-07",
+    "time": "08:30",
+    "description": "Eid salah followed by light refreshments. Please arrive 15 minutes early.",
+    "image": "img/events-3.jpg",
+    "ctaText": "Details",
+    "ctaUrl": "#",
+    "published": false
+  }
+]

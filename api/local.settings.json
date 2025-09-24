@@ -1,0 +1,10 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "STORAGE_ACCOUNT_BLOB_URL": "https://<youraccount>.blob.core.windows.net",
+    "PRAYER_TIMES_CONTAINER": "config",
+    "PRAYER_TIMES_BLOB": "prayer-times.json"
+  }
+}

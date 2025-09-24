@@ -1,0 +1,2 @@
+Azure Static Web App deployment automated via PowerShell script using az + swa CLI.
+This file is informational; safe to delete.
