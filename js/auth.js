@@ -65,10 +65,21 @@
     try{
       const resp = await fetch('/.auth/me',{cache:'no-store'});
       if(!resp.ok){ renderSignedOut(); return; }
-      const info = await resp.json();
-      if(info && info.clientPrincipal){
-        renderSignedIn(info.clientPrincipal);
-        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(info.clientPrincipal)); }catch{}
+      const info = await resp.json(); // shape: {clientPrincipal:{identityProvider,userDetails,userRoles,claims:[]}}
+      let principal = info && (info.clientPrincipal || info.principal || info);
+      // If userDetails empty, attempt to extract from email/upn/name claim
+      if(principal && (!principal.userDetails || principal.userDetails.trim()==='')){
+        if(Array.isArray(principal.claims)){
+          const findClaim = (typArr)=> principal.claims.find(c=> typArr.includes(c.typ || c.type));
+          const emailClaim = findClaim(['email','emails']);
+          const upnClaim = findClaim(['upn']);
+          const nameClaim = findClaim(['name']);
+            principal.userDetails = (emailClaim && emailClaim.val) || (upnClaim && upnClaim.val) || (nameClaim && nameClaim.val) || principal.userDetails;
+        }
+      }
+      if(principal && principal.userDetails){
+        renderSignedIn(principal);
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(principal)); }catch{}
       } else {
         renderSignedOut();
         try{ localStorage.removeItem(STORAGE_KEY); }catch{}
