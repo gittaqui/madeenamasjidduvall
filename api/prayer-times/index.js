@@ -10,7 +10,6 @@ async function readBlobJson(blobClient) {
 
 async function writeBlobJson(blobClient, obj) {
   const data = Buffer.from(JSON.stringify(obj, null, 2), 'utf8');
-  await blobClient.getContainerClient().createIfNotExists({ access: 'private' }).catch(()=>{});
   await blobClient.uploadData(data, { blobHTTPHeaders: { blobContentType: 'application/json' } });
 }
 
@@ -67,12 +66,16 @@ module.exports = async function (context, req) {
         for (const p of fallbackPaths) {
           try {
             const fallback = require(p);
+    // Promote current month override if root adhan largely empty
+    promoteCurrentMonthIntoRoot(fallback, context);
             return (context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: fallback });
           } catch {}
         }
   context.log('No blob + no local fallback prayer-times.json found');
   return (context.res = { status: 404, body: 'prayer-times.json not found' });
       }
+  // Normalize: if root missing times but current month override has them, promote for easier client rendering
+  promoteCurrentMonthIntoRoot(json, context);
       context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: json };
     } catch (err) {
       context.log('GET error', err.message);
@@ -104,10 +107,12 @@ module.exports = async function (context, req) {
         context.res = { status: 400, body: 'Refusing to save empty schedule (no months or days provided).' };
         return;
       }
+  // If root adhan/iqamah mostly empty but exactly one month override exists, promote it into root for simplified client consumption
+  promoteSingleMonthIntoRoot(body, context);
       // Ensure container exists
       try { await storage.containerClient.createIfNotExists({ access: 'private' }); } catch {}
   await writeBlobJson(storage.blobClient, body);
-      context.res = { status: 200, body: JSON.stringify({ status: 'OK', container: storage.containerName, blob: storage.blobName, months: Object.keys(body.months||{}).length, days: Object.keys(body.days||{}).length }) };
+      context.res = { status: 200, headers: { 'Content-Type': 'application/json' }, body: { status: 'OK', container: storage.containerName, blob: storage.blobName, months: Object.keys(body.months||{}).length, days: Object.keys(body.days||{}).length } };
     } catch (err) {
       context.log('POST error', err.message);
       context.res = { status: 500, body: 'Failed to save prayer times' };
@@ -117,3 +122,45 @@ module.exports = async function (context, req) {
 
   context.res = { status: 405, body: 'Method Not Allowed' };
 };
+
+// Helper: determine if root adhan/iqamah mostly empty (no keys with truthy values)
+function isRootMostlyEmpty(obj){
+  const a = (obj.adhan)||{}; const i = (obj.iqamah)||{};
+  const hasAdhan = Object.values(a).some(v=> !!v);
+  const hasIqamah = Object.values(i).some(v=> !!v);
+  return !(hasAdhan || hasIqamah);
+}
+
+function promoteSingleMonthIntoRoot(body, context){
+  try {
+    if(!body || !body.months || typeof body.months !== 'object') return;
+    const monthKeys = Object.keys(body.months);
+    if(monthKeys.length !== 1) return; // only promote when exactly one month to avoid ambiguity
+    if(!isRootMostlyEmpty(body)) return;
+    const mk = monthKeys[0];
+    const ov = body.months[mk];
+    if(!ov) return;
+    // Copy over fields if present
+    for(const k of ['sunrise','note']) if(ov[k] && !body[k]) body[k] = ov[k];
+    if(ov.adhan) body.adhan = { ...(ov.adhan) };
+    if(ov.iqamah) body.iqamah = { ...(ov.iqamah) };
+    if(Array.isArray(ov.jumuah)) body.jumuah = JSON.parse(JSON.stringify(ov.jumuah));
+    context.log(`Promoted single month override (${mk}) into root for simpler consumption.`);
+  } catch(e){ context.log('promoteSingleMonthIntoRoot error', e.message); }
+}
+
+function promoteCurrentMonthIntoRoot(json, context){
+  try {
+    if(!json || !json.months || typeof json.months !== 'object') return;
+    if(!isRootMostlyEmpty(json)) return; // root already populated
+    const now = new Date();
+    const mk = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const ov = json.months[mk];
+    if(!ov) return;
+    for(const k of ['sunrise','note']) if(ov[k] && !json[k]) json[k] = ov[k];
+    if(ov.adhan) json.adhan = { ...(ov.adhan) };
+    if(ov.iqamah) json.iqamah = { ...(ov.iqamah) };
+    if(Array.isArray(ov.jumuah) && (!json.jumuah || json.jumuah.length===0)) json.jumuah = JSON.parse(JSON.stringify(ov.jumuah));
+    context.log(`Promoted current month override (${mk}) into root for GET response.`);
+  } catch(e){ context.log('promoteCurrentMonthIntoRoot error', e.message); }
+}

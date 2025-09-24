@@ -174,6 +174,24 @@
   async function saveToServer(){
     const key = MONTH_INPUT.value.trim();
     if(key && /^\d{4}-\d{2}$/.test(key)) mergeOverride(key);
+    // If root mostly empty but exactly one month override, promote it client-side too for immediate UX
+    try {
+      const monthKeys = data.months ? Object.keys(data.months) : [];
+      const rootEmpty = (()=>{
+        const a = data.adhan||{}; const i = data.iqamah||{};
+        return !Object.values(a).some(v=>v) && !Object.values(i).some(v=>v);
+      })();
+      if(rootEmpty && monthKeys.length === 1){
+        const mk = monthKeys[0]; const ov = data.months[mk];
+        if(ov){
+          if(ov.sunrise && !data.sunrise) data.sunrise = ov.sunrise;
+          if(ov.note && !data.note) data.note = ov.note;
+          if(ov.adhan) data.adhan = { ...(ov.adhan) };
+            if(ov.iqamah) data.iqamah = { ...(ov.iqamah) };
+            if(Array.isArray(ov.jumuah)) data.jumuah = JSON.parse(JSON.stringify(ov.jumuah));
+        }
+      }
+    }catch{}
     // Pre-check admin role to avoid auth redirect causing fetch network/CORS error
     const isAdmin = await checkAdminRole();
     if(!isAdmin){
