@@ -1,12 +1,27 @@
 {
-  "auth": {
-    "staticRoles": [
-      {
-        "provider": "github",
-        "userId": "local-admin",
-        "userDetails": "localadmin@example.com",
-        "userRoles": ["authenticated", "admin"]
+  "configurations": {
+    "default": {
+      "auth": {
+        "identityProviders": {
+          "github": {},
+          "aad": {}
+        },
+        "staticRoles": [
+          {
+            "provider": "github",
+            "userId": "local-admin",
+            "userDetails": "localadmin@example.com",
+            "userRoles": ["authenticated", "admin"]
+          },
+          {
+            "provider": "aad",
+            "userId": "taqui@outlook.com",
+            "userDetails": "taqui@outlook.com",
+            "userRoles": ["authenticated", "admin"]
+          }
+        ],
+        "defaultProvider": "aad"
       }
-    ]
+    }
   }
 }

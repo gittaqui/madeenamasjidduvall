@@ -87,16 +87,20 @@ module.exports = async function (context, req) {
   }
 
   if (method === 'POST') {
-    // Auth & role evaluation
-    const { isAuthenticated, isAdmin, roles } = authStatus(req);
-    if(!isAuthenticated){
-      context.res = { status: 401, body: 'Unauthorized (not signed in)' }; // triggers login redirect
-      return;
-    }
-    if(!isAdmin){
-      // Return 403 so user sees forbidden instead of login loop when already signed in
-      context.res = { status: 403, body: 'Forbidden: admin role required. Roles on token: '+ roles.join(', ') };
-      return;
+    if(process.env.DEV_ALLOW_NON_ADMIN === '1'){
+      context.log('DEV_ALLOW_NON_ADMIN=1 active: bypassing auth/role checks for POST');
+    } else {
+      // Auth & role evaluation
+      const { isAuthenticated, isAdmin, roles } = authStatus(req);
+      if(!isAuthenticated){
+        context.res = { status: 401, body: 'Unauthorized (not signed in)' }; // triggers login redirect
+        return;
+      }
+      if(!isAdmin){
+        // Return 403 so user sees forbidden instead of login loop when already signed in
+        context.res = { status: 403, body: 'Forbidden: admin role required. Roles on token: '+ roles.join(', ') };
+        return;
+      }
     }
     if (!storage || !storage.blobClient) {
       context.res = { status: 503, body: 'Storage not configured on server' };
