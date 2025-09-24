@@ -195,7 +195,7 @@
     // Pre-check admin role to avoid auth redirect causing fetch network/CORS error
     const isAdmin = await checkAdminRole();
     if(!isAdmin){
-      // Navigate to login explicitly
+      console.warn('[admin] Not admin before save; redirecting to login');
       location.href = '/.auth/login/aad?post_login_redirect_uri=/admin-schedule.html';
       return;
     }
@@ -208,13 +208,10 @@
         credentials: 'include', // ensure auth cookies sent so admin role recognized
         cache: 'no-store'
       });
-      if(resp.status === 307){
-        // Simulator sometimes returns temporary redirect to login
-        location.href = '/.auth/login/aad?post_login_redirect_uri=/admin-schedule.html';
-        return;
-      }
-      if(resp.status === 401){
-        // Not authenticated for admin role – redirect to login
+      if(resp.status === 307 || resp.status === 401){
+        console.warn('[admin] Save POST got', resp.status, 'redirect/auth needed. Attempting role re-check then redirect.');
+        // Re-check principal (maybe cookie missing)
+        await showPrincipalDebug();
         location.href = '/.auth/login/aad?post_login_redirect_uri=/admin-schedule.html';
         return;
       }
