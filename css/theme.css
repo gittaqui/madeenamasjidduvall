@@ -57,3 +57,61 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 .navbar .nav-link:hover,
 .navbar .nav-link:focus,
 .navbar .nav-link.active { color: var(--primary) !important; text-decoration: underline; }
+
+/* Prayer panel redesign */
+#prayer-schedule.prayer-panel {
+  position: relative;
+  background: linear-gradient(140deg,#004d20,#007a33 60%,#009e42);
+  color: #fff;
+  border-radius: 18px;
+  padding: 1.25rem 1.25rem 1.4rem;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+}
+#prayer-schedule.prayer-panel[data-bg="image"]::before {
+  content: "";
+  position: absolute; inset:0;
+  background: var(--prayer-bg-image, url('../img/hero.jpg')) center/cover no-repeat;
+  filter: brightness(.55) saturate(.9) blur(1px);
+  opacity:.4;
+}
+#prayer-schedule.prayer-panel::after{ /* subtle top glow */
+  content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(0,0,0,.35)); pointer-events:none;
+}
+#prayer-schedule.prayer-panel * { position: relative; }
+
+#prayer-schedule .panel-headline { font-size:1.05rem; font-weight:600; letter-spacing:.5px; }
+#prayer-schedule .date-line { font-size:.8rem; opacity:.9; margin-top:-.25rem; }
+#prayer-schedule .sunrise-inline { font-size:.8rem; margin-top:.25rem; }
+
+#prayer-schedule .next-box { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); padding:.65rem .9rem; border-radius:14px; display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+#prayer-schedule .next-box .label { font-size:.7rem; text-transform:uppercase; letter-spacing:1px; opacity:.75; }
+#prayer-schedule .next-box .name { font-weight:600; }
+#prayer-schedule .next-box .eta { font-family:monospace; font-size:1rem; }
+
+#prayer-schedule table.prayer-table { width:100%; border-collapse:separate; border-spacing:0 .4rem; }
+#prayer-schedule table.prayer-table thead th { font-size:.65rem; text-transform:uppercase; letter-spacing:1px; background:rgba(255,255,255,.15); color:#fff; padding:.4rem .55rem; border:none; }
+#prayer-schedule table.prayer-table tbody th { font-weight:500; padding:.55rem .6rem; width:28%; }
+#prayer-schedule table.prayer-table tbody td { padding:.55rem .6rem; font-weight:500; font-family:monospace; }
+#prayer-schedule table.prayer-table tbody tr { background:rgba(255,255,255,.08); border-radius:12px; }
+#prayer-schedule table.prayer-table tbody tr:hover { background:rgba(255,255,255,.13); }
+#prayer-schedule table.prayer-table tbody tr th:first-child { border-top-left-radius:12px; border-bottom-left-radius:12px; }
+#prayer-schedule table.prayer-table tbody tr td:last-child { border-top-right-radius:12px; border-bottom-right-radius:12px; }
+
+/* Column color accents similar to sample (gray + highlighted jamah) */
+#prayer-schedule .adhan-cell { background:rgba(0,0,0,.35); color:#e6e6e6; }
+#prayer-schedule .iqamah-cell { background:var(--primary); color:#fff; font-weight:600; }
+#prayer-schedule .iqamah-cell.pulsing { animation:pulseGlow 3s ease-in-out infinite; }
+
+/* Adjust spacing for cells inside separated rows */
+#prayer-schedule .prayer-table tbody tr > * { border:0; }
+
+#prayer-schedule #sun-times { margin-top:1rem; font-size:.75rem; color:#f1f1f1; }
+#prayer-schedule #sun-times strong { font-weight:600; }
+
+/* Reduced motion respect */
+@media (prefers-reduced-motion: reduce){
+  #prayer-schedule table tbody tr { animation:none !important; }
+  #next-iqamah-name.pulsing, #next-iqamah.pulsing, #next-iqamah-eta.updated, .updated { animation:none !important; transition:none !important; }
+}
+

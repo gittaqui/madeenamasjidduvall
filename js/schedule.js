@@ -164,8 +164,14 @@
       const iqamahStr = (r.iqamah === false) ? '' : (data.iqamah && data.iqamah[r.key]) || '';
       const tr = document.createElement('tr');
       const th = document.createElement('th'); th.textContent = r.label; tr.appendChild(th);
-  const tdAdhan = document.createElement('td'); tdAdhan.textContent = adhanStr || ''; tr.appendChild(tdAdhan);
-      const tdIqamah = document.createElement('td'); tdIqamah.textContent = iqamahStr; tr.appendChild(tdIqamah);
+  const tdAdhan = document.createElement('td');
+  tdAdhan.textContent = adhanStr || '';
+  tdAdhan.classList.add('adhan-cell');
+  tr.appendChild(tdAdhan);
+  const tdIqamah = document.createElement('td');
+  tdIqamah.textContent = iqamahStr;
+  tdIqamah.classList.add('iqamah-cell');
+  tr.appendChild(tdIqamah);
       tbody.appendChild(tr);
     });
   }
