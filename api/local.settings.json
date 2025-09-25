@@ -7,6 +7,10 @@
   "PRAYER_TIMES_CONTAINER": "config",
   "PRAYER_TIMES_BLOB": "prayer-times.json",
   "WEBSITE_NODE_DEFAULT_VERSION": "~18",
-  "DEV_ALLOW_NON_ADMIN": "1"
+  "DEV_ALLOW_NON_ADMIN": "1",
+  "MAIL_PROVIDER": "resend",
+  "RESEND_API_KEY": "re_3aoixSGa_9Q9kvy6r6aqvRKG35UnFzDv3",
+  "TO_EMAIL": "recipient@example.org",
+  "FROM_EMAIL": "onboarding@resend.dev"
   }
 }

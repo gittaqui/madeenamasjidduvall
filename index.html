@@ -78,7 +78,7 @@
                     <div class="collapse navbar-collapse bg-white" id="navbarCollapse">
                         <div class="navbar-nav ms-lg-auto mx-xl-auto">
                             <a href="index.html" class="nav-item nav-link active">Home</a>
-                            <a href="about.html" class="nav-item nav-link">About</a>
+                            <!-- About removed -->
                             <a href="islam-101.html" class="nav-item nav-link">Islam 101</a>
                             <a href="looking-for-peace.html" class="nav-item nav-link">Looking for Peace</a>
                             <a href="event.html" class="nav-item nav-link">Events</a>
@@ -176,10 +176,7 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div id="jumuah-block" class="mt-3">
-                                <h6 class="mb-2 text-white-50">Jumu'ah (Friday) Prayers</h6>
-                                <ul class="mb-0" id="jumuah-list"></ul>
-                            </div>
+                            
                             <div id="sun-times" class="mt-3 small" aria-live="polite">
                                 <strong>Sunrise:</strong> <span id="sunrise-display">—</span>
                                 <span class="ms-3"><strong>Sunset:</strong> <span id="sunset-display">—</span></span>
@@ -190,11 +187,25 @@
                               <input type="date" id="sched-date" class="form-control form-control-sm w-auto" title="Select date">
                               <button class="btn btn-sm btn-outline-light" id="sched-next" title="Next day" aria-label="Next day">&#x203A;</button>
                               <button class="btn btn-sm btn-outline-light" id="sched-today" title="Jump to today">Today</button>
-                              <a href="event.html" class="btn btn-sm btn-light" title="View full calendar">Calendar</a>
                             </div>
                         </div>
                     </div>
                 </div>
+                <!-- Events Start (moved above Maktab banner) -->
+                <div class="container-fluid event py-5">
+                        <div class="container py-5">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <h2 class="mb-0 wow fadeIn" data-wow-delay="0.1s">Next <span class="text-primary">Event</span></h2>
+                                    <a href="event.html" class="btn btn-outline-primary">View all events</a>
+                                </div>
+                                <div id="home-next-event" aria-live="polite"></div>
+                                <noscript>
+                                    <p class="text-dark">Please enable JavaScript to view the next event.</p>
+                                </noscript>
+                        </div>
+                </div>
+                <!-- Events End -->
+
                 <div class="container text-center bg-primary py-5 wow fadeIn" data-wow-delay="0.1s">
                     <div class="row g-4 align-items-center">
                         <div class="col-lg-2">
@@ -212,23 +223,6 @@
             </div>
         </div>
         <!-- About End -->
-
-
-
-                <!-- Events Start -->
-                <div class="container-fluid event py-5">
-                        <div class="container py-5">
-                                <div class="d-flex align-items-center justify-content-between mb-4">
-                                    <h2 class="mb-0 wow fadeIn" data-wow-delay="0.1s">Next <span class="text-primary">Event</span></h2>
-                                    <a href="event.html" class="btn btn-outline-primary">View all events</a>
-                                </div>
-                                <div id="home-next-event" aria-live="polite"></div>
-                                <noscript>
-                                    <p class="text-dark">Please enable JavaScript to view the next event.</p>
-                                </noscript>
-                        </div>
-                </div>
-        <!-- Events End -->
 
 
         
@@ -262,7 +256,7 @@
                     <div class="col-md-6 col-lg-6 col-xl-3">
                         <div class="footer-item mt-5">
                             <h4 class="text-light mb-4">Madeena <span class="text-primary">Masjid</span> Duvall</h4>
-                            <p class="mb-4 text-secondary">Nostrud exertation ullamco labor nisi aliquip ex ea commodo consequat duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.</p>
+                            <p class="mb-4 text-secondary">A welcoming house of worship serving the Duvall community with daily prayers, education, youth programs, and outreach.</p>
                             <a href="" class="btn btn-primary py-2 px-4">Donate Now</a>
                         </div>
                     </div>

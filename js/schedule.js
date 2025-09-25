@@ -174,25 +174,32 @@
   tr.appendChild(tdIqamah);
       tbody.appendChild(tr);
     });
+    // Append Jumu'ah row matching prayer style when available
+    buildJumuah(data);
   }
   function buildJumuah(data){
-    const ul = document.getElementById('jumuah-list');
-    if(!ul) return;
-    ul.innerHTML = '';
-    const arr = Array.isArray(data.jumuah) ? data.jumuah : [];
-    arr.forEach(item => {
-      const li = document.createElement('li');
-      if(item.title && item.start && item.end){
-        li.textContent = `${item.title} ${item.start} - ${item.end}`;
-      } else if(item.khutbah || item.salah){
-        li.textContent = [item.khutbah && `Khutbah ${item.khutbah}`, item.salah && `Salah ${item.salah}`].filter(Boolean).join(' · ');
-      }
-      ul.appendChild(li);
+    const tbody = document.getElementById('prayer-rows');
+    if(!tbody) return;
+    const sessions = Array.isArray(data.jumuah) ? data.jumuah : [];
+    if(!sessions.length) return;
+    // Determine a single representative time: use earliest Salah (or End) with its Khutbah (or Start)
+    const toMinutes = (str)=>{ const t = parseTimeFlexible(str||''); return t? (t.hh*60+t.mm) : Infinity; };
+    let best = null;
+    sessions.forEach(s => {
+      const khut = s.khutbah || s.start || '';
+      const sal = s.salah || s.end || '';
+      const minutes = toMinutes(sal);
+      if(!best || minutes < best.minutes){ best = { khut, sal, minutes }; }
     });
+    if(!best) return;
+    const tr = document.createElement('tr');
+    const th = document.createElement('th'); th.textContent = "Jumu'ah"; tr.appendChild(th);
+    const tdAdhan = document.createElement('td'); tdAdhan.textContent = best.khut || ''; tdAdhan.classList.add('adhan-cell'); tr.appendChild(tdAdhan);
+    const tdIqamah = document.createElement('td'); tdIqamah.textContent = best.sal || ''; tdIqamah.classList.add('iqamah-cell'); tr.appendChild(tdIqamah);
+    tbody.appendChild(tr);
   }
   function applyData(data){
-    buildRows(data);
-    buildJumuah(data);
+  buildRows(data);
     document.getElementById('now-datetime').textContent = fmtNow();
     // mirror local time into #localtime if new widget exists
     const localEl = document.getElementById('localtime');
@@ -223,7 +230,18 @@
       ['cd-hours','cd-minutes','cd-seconds'].forEach(id=>{ const el = document.getElementById(id); if(el) el.textContent = '00'; });
     }
     const note = document.getElementById('prayer-note');
-    if(data.note && note) note.textContent = data.note;
+    if(data.note && note){
+      // Normalize specific wording to a friendlier label with proper casing.
+      // Map to "Full Schedule" consistently
+      let replaced = String(data.note)
+        .replace(/\bSeptember overrides\b/gi, "Full Schedule")
+        .replace(/September's Schedule/gi, "Full Schedule")
+        .replace(/\bfull schedule\b/gi, "Full Schedule");
+      note.textContent = replaced;
+      // Emphasize when we mention the Full Schedule
+      const emphasize = /full schedule/i.test(replaced);
+      note.classList.toggle('note-strong', emphasize);
+    }
     // Sun times fetch (only once per applyData call for current day)
     fetchSunTimes();
   }
@@ -297,8 +315,7 @@
   if(picker){ picker.value = iso; }
     // when not today, we won’t show a running countdown
     if(dayOffset !== 0){
-      buildRows(d);
-      buildJumuah(d);
+  buildRows(d);
       const nameEl = document.getElementById('next-iqamah-name');
       const etaEl = document.getElementById('next-iqamah-eta');
       nameEl.textContent = '—';
@@ -335,28 +352,50 @@
             const targetNameEl = newNameEl || legacyNameEl;
             if(targetNameEl && targetNameEl.textContent !== newNameCombined){
               targetNameEl.textContent = newNameCombined;
-              targetNameEl.classList.add('pulsing');
-              setTimeout(()=> targetNameEl.classList.remove('pulsing'), 3500);
+            }
+            // Pulse only within 5 minutes before iqamah
+            if(targetNameEl){
+              if(res.ms <= 5*60*1000){
+                targetNameEl.classList.add('pulsing');
+              } else {
+                targetNameEl.classList.remove('pulsing');
+              }
             }
             const parts = splitHMS(res.ms);
             const newEta = `${parts.h}:${parts.m}:${parts.s}`;
             if(etaEl && etaEl.textContent !== newEta){
               etaEl.textContent = newEta;
-              etaEl.classList.add('updated');
-              setTimeout(()=> etaEl.classList.remove('updated'), 450);
+              if(res.ms <= 5*60*1000){
+                etaEl.classList.add('updated');
+                setTimeout(()=> etaEl.classList.remove('updated'), 450);
+              } else {
+                etaEl.classList.remove('updated');
+              }
               etaEl.title = `at ${res.iqamah}`;
             }
             // update split countdown pieces
             const cdH = document.getElementById('cd-hours');
             const cdM = document.getElementById('cd-minutes');
             const cdS = document.getElementById('cd-seconds');
-            if(cdH && cdH.textContent !== parts.h){ cdH.textContent = parts.h; cdH.classList.add('updated'); setTimeout(()=>cdH.classList.remove('updated'),450); }
-            if(cdM && cdM.textContent !== parts.m){ cdM.textContent = parts.m; cdM.classList.add('updated'); setTimeout(()=>cdM.classList.remove('updated'),450); }
-            if(cdS && cdS.textContent !== parts.s){ cdS.textContent = parts.s; cdS.classList.add('updated'); setTimeout(()=>cdS.classList.remove('updated'),450); }
+            if(cdH && cdH.textContent !== parts.h){
+              cdH.textContent = parts.h;
+              if(res.ms <= 5*60*1000){ cdH.classList.add('updated'); setTimeout(()=>cdH.classList.remove('updated'),450); } else { cdH.classList.remove('updated'); }
+            }
+            if(cdM && cdM.textContent !== parts.m){
+              cdM.textContent = parts.m;
+              if(res.ms <= 5*60*1000){ cdM.classList.add('updated'); setTimeout(()=>cdM.classList.remove('updated'),450); } else { cdM.classList.remove('updated'); }
+            }
+            if(cdS && cdS.textContent !== parts.s){
+              cdS.textContent = parts.s;
+              if(res.ms <= 5*60*1000){ cdS.classList.add('updated'); setTimeout(()=>cdS.classList.remove('updated'),450); } else { cdS.classList.remove('updated'); }
+            }
           } else {
             if(nameEl) nameEl.textContent = '—';
             const newNameEl = document.getElementById('next-iqamah');
             if(newNameEl) newNameEl.textContent = '—';
+            const legacyNameEl = document.getElementById('next-iqamah-name');
+            if(legacyNameEl) legacyNameEl.classList.remove('pulsing');
+            if(newNameEl) newNameEl.classList.remove('pulsing');
             if(etaEl){ etaEl.textContent = '—'; etaEl.removeAttribute('title'); }
             ['cd-hours','cd-minutes','cd-seconds'].forEach(id=>{ const el = document.getElementById(id); if(el) el.textContent = '00'; });
           }
