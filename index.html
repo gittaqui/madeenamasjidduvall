@@ -339,6 +339,16 @@
                         });
                     }
                 </script>
+                                <script src="js/subscribe.js"></script>
+                                <div id="subscribe-widget" aria-live="polite">
+                                    <form id="subscribe-form">
+                                        <input type="email" name="email" required placeholder="Email for updates" aria-label="Email address" />
+                                        <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true" aria-label="Do not fill" />
+                                        <button class="btn btn-sm btn-primary" type="submit">Subscribe</button>
+                                    </form>
+                                    <div id="subscribe-msg"></div>
+                                    <button id="subscribe-close" type="button" aria-label="Close subscribe widget">×</button>
+                                </div>
     </body>
 
 </html>
