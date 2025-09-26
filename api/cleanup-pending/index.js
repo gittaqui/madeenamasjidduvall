@@ -1,6 +1,27 @@
 const { getTableClient } = require('../shared/tableClient');
+const net = require('net');
+
+function azuriteTablePort(){
+  // Default Azurite table endpoint port
+  return 10002;
+}
+
+async function isLocalAzuriteAvailable(){
+  if(!(process.env.STORAGE_CONNECTION_STRING||'').startsWith('UseDevelopmentStorage')) return true; // using real storage or other config
+  const port = azuriteTablePort();
+  return await new Promise(res=>{
+    const socket = new net.Socket();
+    const timer = setTimeout(()=>{ socket.destroy(); res(false); }, 400);
+    socket.on('error', ()=>{ clearTimeout(timer); res(false); });
+    socket.connect(port, '127.0.0.1', ()=>{ clearTimeout(timer); socket.end(); res(true); });
+  });
+}
 
 module.exports = async function (context){
+  if(!await isLocalAzuriteAvailable()){
+    context.log('[cleanup-pending] Azurite Table endpoint not available locally; skipping cleanup (dev mode).');
+    return;
+  }
   const table = getTableClient();
   const cutoff = Date.now() - 24*60*60*1000; // 24h
   let removed = 0, tokensRemoved = 0;

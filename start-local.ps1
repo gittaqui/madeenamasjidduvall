@@ -10,12 +10,32 @@ Write-Host 'Starting local development environment...' -ForegroundColor Cyan
 if(-not $NoAzurite){
   $azurite = Get-Process -Name azurite -ErrorAction SilentlyContinue
   if(-not $azurite){
-    Write-Host 'Launching Azurite on default ports...' -ForegroundColor Yellow
-    Start-Process -FilePath azurite -ArgumentList '--silent' | Out-Null
-    Start-Sleep -Seconds 2
+    $azuriteCmd = 'azurite'
+    if(-not (Get-Command azurite -ErrorAction SilentlyContinue)){
+      Write-Host 'Global azurite not found; using npx azurite (install globally for faster startup).' -ForegroundColor Yellow
+      $azuriteCmd = 'npx'
+      $argsList = 'azurite --silent'
+    } else {
+      $argsList = '--silent'
+    }
+    Write-Host 'Launching Azurite on default ports (Blob:10000 Queue:10001 Table:10002)...' -ForegroundColor Yellow
+    if($azuriteCmd -eq 'npx'){
+      Start-Process -FilePath $azuriteCmd -ArgumentList $argsList | Out-Null
+    } else {
+      Start-Process -FilePath $azuriteCmd -ArgumentList $argsList | Out-Null
+    }
+    Start-Sleep -Seconds 3
   } else {
     Write-Host 'Azurite already running.' -ForegroundColor Green
   }
+  # Quick connectivity probe for Table endpoint
+  try {
+    $tcpClient = New-Object System.Net.Sockets.TcpClient
+    $iar = $tcpClient.BeginConnect('127.0.0.1',10002,$null,$null)
+    $connected = $iar.AsyncWaitHandle.WaitOne(500)
+    if(-not $connected){ Write-Host 'Warning: Azurite Table endpoint (10002) not reachable; table features may be skipped.' -ForegroundColor Yellow }
+    $tcpClient.Close()
+  } catch { Write-Host 'Warning: Could not test Azurite Table endpoint.' -ForegroundColor Yellow }
 }
 
 # Ensure dependencies for Functions
