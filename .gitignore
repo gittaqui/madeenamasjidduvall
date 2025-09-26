@@ -1,3 +1,4 @@
+Extract contact form logic into a separate JavaScript file; enhance validation and user feedback for improved usability.
 # Dependencies
 node_modules/
 
