@@ -29,39 +29,37 @@
   };
 
   function byId(id){ return document.getElementById(id); }
-  function assignFields(prefix){
-    const obj = {
-  sunrise: data.sunrise || '',
-  note: byId(`${prefix}-note`).value.trim(),
+  function assignFields(){
+    return {
+      sunrise: data.sunrise || '',
+      note: byId('ov-note').value.trim(),
       adhan: {
-        fajr: byId(`${prefix}-adhan-fajr`).value.trim(),
-        dhuhr: byId(`${prefix}-adhan-dhuhr`).value.trim(),
-  asr: byId(`${prefix}-adhan-asr`).value.trim(),
-        maghrib: byId(`${prefix}-adhan-maghrib`).value.trim(),
-        isha: byId(`${prefix}-adhan-isha`).value.trim()
+        fajr: byId('ov-adhan-fajr').value.trim(),
+        dhuhr: byId('ov-adhan-dhuhr').value.trim(),
+        asr: byId('ov-adhan-asr').value.trim(),
+        maghrib: byId('ov-adhan-maghrib').value.trim(),
+        isha: byId('ov-adhan-isha').value.trim()
       },
       iqamah: {
-        fajr: byId(`${prefix}-iqamah-fajr`).value.trim(),
-        dhuhr: byId(`${prefix}-iqamah-dhuhr`).value.trim(),
-  asr: byId(`${prefix}-iqamah-asr`).value.trim(),
-        maghrib: byId(`${prefix}-iqamah-maghrib`).value.trim(),
-        isha: byId(`${prefix}-iqamah-isha`).value.trim()
+        fajr: byId('ov-iqamah-fajr').value.trim(),
+        dhuhr: byId('ov-iqamah-dhuhr').value.trim(),
+        asr: byId('ov-iqamah-asr').value.trim(),
+        maghrib: byId('ov-iqamah-maghrib').value.trim(),
+        isha: byId('ov-iqamah-isha').value.trim()
       },
-      jumuah: collectJumuah(prefix)
+      jumuah: collectJumuah()
     };
-    return obj;
   }
-  function collectJumuah(prefix){
-    const map = { ov: 'ov-jumuah', rg: 'rg-jumuah' };
-    const host = byId(map[prefix] || 'ov-jumuah');
+  function collectJumuah(){
+    const host = byId('ov-jumuah');
     return Array.from(host.querySelectorAll('.j-row')).map(row => ({
       title: row.querySelector('.j-title').value.trim(),
       start: row.querySelector('.j-start').value.trim(),
       end: row.querySelector('.j-end').value.trim()
     })).filter(x => x.title || x.start || x.end);
   }
-  function addJumuahRow(prefix, val={}){
-    const host = byId(prefix === 'ov' ? 'ov-jumuah' : 'rg-jumuah');
+  function addJumuahRow(_prefix, val={}){
+    const host = byId('ov-jumuah');
     const div = document.createElement('div');
     div.className = 'j-row d-flex gap-2';
     div.innerHTML = `
@@ -122,7 +120,7 @@
   }
   // daily fill removed with new date-range workflow
   function mergeOverride(key){
-    const ov = assignFields('ov');
+    const ov = assignFields();
     if(!data.months) data.months = {};
     data.months[key] = {
   sunrise: data.sunrise || undefined,
@@ -137,7 +135,7 @@
     const endRaw = (RANGE_END.value || '').trim();
     if(!/^\d{4}-\d{2}-\d{2}$/.test(start)) return alert('Enter a valid start date (YYYY-MM-DD)');
     const end = endRaw && /^\d{4}-\d{2}-\d{2}$/.test(endRaw) ? endRaw : start;
-    const vals = assignFields('rg');
+  const vals = assignFields();
     const startDate = new Date(start+'T00:00:00');
     const endDate = new Date(end+'T00:00:00');
     if(startDate > endDate) return alert('Start date must be on or before end date');
@@ -328,8 +326,7 @@
   btnDownload.addEventListener('click', download);
   btnSaveServer.addEventListener('click', saveToServer);
   btnReset.addEventListener('click', ()=>{ location.reload(); });
-  byId('ov-add-jumuah').addEventListener('click', ()=> addJumuahRow('ov'));
-  byId('rg-add-jumuah').addEventListener('click', ()=> addJumuahRow('rg'));
+  byId('ov-add-jumuah').addEventListener('click', ()=> addJumuahRow());
   MONTH_INPUT.addEventListener('change', ()=> fillOverride(MONTH_INPUT.value.trim()));
   if(btnThisMonth) btnThisMonth.addEventListener('click', ()=>{
     const d = new Date(); setRangeTo(d.getFullYear(), d.getMonth());

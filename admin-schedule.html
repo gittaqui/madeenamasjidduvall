@@ -56,8 +56,9 @@
     <div class="row g-4">
       <div class="col-lg-12">
         <div class="card">
-          <div class="card-header">Override for Selected Month</div>
+          <div class="card-header">Schedule Editor (Month Override & Date Range)</div>
           <div class="card-body">
+            <p class="small text-secondary mb-2">Edit the fields below. To save for the selected month enter the Month (YYYY-MM) then use Save/Download. To apply these same values to every day in a date range, set From/To above and click <strong>Apply to Range</strong>.</p>
             <div class="row g-3">
               <div class="col-12"><label class="form-label" for="ov-note">Note</label><input class="form-control" id="ov-note" placeholder="Optional note" title="Note"></div>
               <div class="col-12 col-md-6"><label class="form-label" for="ov-adhan-fajr">Fajr Adhan</label><input class="form-control" id="ov-adhan-fajr" placeholder="05:26 AM" title="Fajr Adhan"></div>
@@ -74,36 +75,10 @@
             <div class="mt-3">
               <label class="form-label">Jumu'ah Sessions</label>
               <div id="ov-jumuah" class="vstack gap-2"></div>
-              <button class="btn btn-sm btn-outline-primary mt-2" id="ov-add-jumuah">Add Jumu'ah</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row g-4 mt-1">
-      <div class="col-lg-12">
-        <div class="card">
-          <div class="card-header">Update Schedule for Date Range</div>
-          <div class="card-body">
-            <p class="small text-secondary">Set a start/end date above (same day allowed), fill times below, then click Apply to Range.</p>
-            <div class="row g-3">
-              <div class="col-12"><label class="form-label" for="rg-note">Note</label><input class="form-control" id="rg-note" placeholder="Optional note" title="Note"></div>
-              <div class="col-12 col-md-6"><label class="form-label" for="rg-adhan-fajr">Fajr Adhan</label><input class="form-control" id="rg-adhan-fajr" placeholder="05:26 AM" title="Fajr Adhan"></div>
-              <div class="col-12 col-md-6"><label class="form-label" for="rg-iqamah-fajr">Fajr Iqamah</label><input class="form-control" id="rg-iqamah-fajr" placeholder="06:15 AM" title="Fajr Iqamah"></div>
-              <div class="col-12 col-md-6"><label class="form-label" for="rg-adhan-dhuhr">Dhuhr Adhan</label><input class="form-control" id="rg-adhan-dhuhr" placeholder="01:03 PM" title="Dhuhr Adhan"></div>
-              <div class="col-12 col-md-6"><label class="form-label" for="rg-iqamah-dhuhr">Dhuhr Iqamah</label><input class="form-control" id="rg-iqamah-dhuhr" placeholder="01:40 PM" title="Dhuhr Iqamah"></div>
-              <div class="col-12 col-md-6"><label class="form-label" for="rg-adhan-asr">Asr Adhan</label><input class="form-control" id="rg-adhan-asr" placeholder="04:29 PM" title="Asr Adhan"></div>
-              <div class="col-12 col-md-6"><label class="form-label" for="rg-iqamah-asr">Asr Iqamah</label><input class="form-control" id="rg-iqamah-asr" placeholder="06:00 PM" title="Asr Iqamah"></div>
-              <div class="col-12 col-md-6"><label class="form-label" for="rg-adhan-maghrib">Maghrib Adhan</label><input class="form-control" id="rg-adhan-maghrib" placeholder="07:15 PM" title="Maghrib Adhan"></div>
-              <div class="col-12 col-md-6"><label class="form-label" for="rg-iqamah-maghrib">Maghrib Iqamah</label><input class="form-control" id="rg-iqamah-maghrib" placeholder="07:18 PM" title="Maghrib Iqamah"></div>
-              <div class="col-12 col-md-6"><label class="form-label" for="rg-adhan-isha">Isha Adhan</label><input class="form-control" id="rg-adhan-isha" placeholder="08:44 PM" title="Isha Adhan"></div>
-              <div class="col-12 col-md-6"><label class="form-label" for="rg-iqamah-isha">Isha Iqamah</label><input class="form-control" id="rg-iqamah-isha" placeholder="09:00 PM" title="Isha Iqamah"></div>
-            </div>
-            <div class="mt-3">
-              <label class="form-label">Jumu'ah Sessions</label>
-              <div id="rg-jumuah" class="vstack gap-2"></div>
-              <button class="btn btn-sm btn-outline-primary mt-2" id="rg-add-jumuah">Add Jumu'ah</button>
-              <button class="btn btn-sm btn-success mt-2" id="btn-apply-range" title="Apply to all dates between From and To (inclusive)">Apply to Range</button>
+              <div class="d-flex flex-wrap gap-2 mt-2">
+                <button class="btn btn-sm btn-outline-primary" id="ov-add-jumuah">Add Jumu'ah</button>
+                <button class="btn btn-sm btn-success" id="btn-apply-range" title="Apply to all dates between From and To (inclusive)">Apply to Range</button>
+              </div>
             </div>
           </div>
         </div>
