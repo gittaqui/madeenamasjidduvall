@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Subscribers Admin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="css/bootstrap.min.css" rel="stylesheet" />
+  <link href="css/style.css" rel="stylesheet" />
+  <link href="css/theme.css" rel="stylesheet" />
+</head>
+<body class="p-3">
+  <div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h3 mb-0">Subscribers</h1>
+      <div><span id="auth-box"></span></div>
+    </div>
+    <div class="alert alert-info py-2" id="status-info">Loading...</div>
+    <div class="mb-3 d-flex gap-2 flex-wrap">
+      <select id="filter-status" class="form-select form-select-sm w-auto" aria-label="Status filter">
+        <option value="active">Active</option>
+        <option value="pending">Pending</option>
+        <option value="unsub">Unsubscribed</option>
+      </select>
+      <button id="refresh-btn" class="btn btn-sm btn-primary">Refresh</button>
+      <button id="export-btn" class="btn btn-sm btn-outline-secondary">Export CSV</button>
+      <button id="purge-pending-btn" class="btn btn-sm btn-outline-danger d-none">Purge Expired Pending (24h+)</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle" id="subs-table">
+        <thead>
+          <tr><th>Email</th><th>Status</th><th>Created</th><th>Confirmed</th><th>Unsub</th><th>Actions</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  <script src="js/auth.js"></script>
+  <script src="js/admin-subscribers.js"></script>
+</body>
+</html>

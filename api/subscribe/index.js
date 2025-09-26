@@ -21,7 +21,15 @@ module.exports = async function (context, req){
   let token = pendingEntity && pendingEntity.token;
   if(!pendingEntity){
     token = randomToken();
-    await table.upsertEntity({ partitionKey:'pending', rowKey:hash, email: emailRaw, token, createdUtc: new Date().toISOString() });
+    const createdUtc = new Date().toISOString();
+    await table.upsertEntity({ partitionKey:'pending', rowKey:hash, email: emailRaw, token, createdUtc });
+    // token index row for O(1) confirmation lookup
+    await table.upsertEntity({ partitionKey:'token', rowKey:token, hash, createdUtc });
+  } else {
+    // ensure token index exists if upgrading from previous version
+    try { await table.getEntity('token', pendingEntity.token); } catch {
+      await table.upsertEntity({ partitionKey:'token', rowKey:pendingEntity.token, hash, createdUtc: pendingEntity.createdUtc || new Date().toISOString() });
+    }
   }
   const site = process.env.SITE_ORIGIN || (req.headers['x-forwarded-host'] ? `https://${req.headers['x-forwarded-host']}` : '');
   const confirmUrl = site ? `${site}/confirm.html?token=${token}` : `/confirm.html?token=${token}`;
