@@ -82,7 +82,13 @@
       set(box.querySelector('[data-key="maghrib"]'), pick(iqamah.maghrib, adhan.maghrib, data.maghrib));
       set(box.querySelector('[data-key="isha"]'), pick(iqamah.isha, adhan.isha, data.isha));
       set(box.querySelector('[data-key="jumuah"]'), formatJumuah(data.jumuah));
-      if(data.note) set(box.querySelector('[data-key="note"]'), data.note);
+      if(data.note){
+        const note = String(data.note).trim();
+        const isInternalDiagnostic = /fallback copy/i.test(note) || /read-only unless external storage/i.test(note);
+        if(!isInternalDiagnostic){
+          set(box.querySelector('[data-key="note"]'), note);
+        }
+      }
     }catch(e){
       // keep placeholders
       console.warn('Prayer times unavailable:', e);
