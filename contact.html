@@ -261,6 +261,19 @@
                         const messageEl = document.getElementById('c-message');
                         const hpEl = document.getElementById('c-hp');
                         if(!btn) return;
+                        const status = document.createElement('div');
+                        status.className = 'mt-3 small';
+                        status.setAttribute('role','status');
+                        status.setAttribute('aria-live','polite');
+                        btn.parentNode.appendChild(status);
+                        function setStatus(msg, ok){
+                          status.textContent = msg;
+                          status.classList.toggle('text-success', !!ok);
+                          status.classList.toggle('text-danger', !ok);
+                        }
+                        function validateEmail(v){
+                          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+                        }
                         async function send(){
                             const name = nameEl.value.trim();
                             const email = emailEl.value.trim();
@@ -268,27 +281,26 @@
                             const message = messageEl.value.trim();
                             const hp = hpEl.value.trim();
                             if(!name || !email || !subject || !message){
-                                alert('Please fill in all fields.');
-                                return;
+                                setStatus('Please fill in all fields.', false); return;
                             }
-                            btn.disabled = true; const prev = btn.textContent; btn.textContent = 'Sending...';
-                            try{
-                                const res = await fetch('/api/send-email', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ name, email, subject, message, hp })
-                                });
+                            if(!validateEmail(email)) { setStatus('Please enter a valid email.', false); return; }
+                            btn.disabled = true; const prev = btn.textContent; btn.textContent = 'Sending…';
+                            setStatus('Sending message…', true);
+                            try {
+                                const res = await fetch('/api/send-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, subject, message, hp }) });
                                 const data = await res.json().catch(()=>({}));
                                 if(res.ok && data && data.ok){
-                                    alert('Message sent. Thank you!');
+                                    setStatus('Message sent. Thank you!', true);
                                     nameEl.value = emailEl.value = subjectEl.value = messageEl.value = '';
+                                } else if(res.status === 400 && data && data.error === 'Unverified sending domain') {
+                                    setStatus('Email temporarily blocked until domain is verified. Please try again later.', false);
                                 } else if(res.status === 501){
-                                    alert('Email service not configured. Please set SENDGRID_API_KEY, TO_EMAIL, FROM_EMAIL.');
+                                    setStatus('Email service not fully configured. Contact site admin.', false);
                                 } else {
-                                    alert(data && data.error ? data.error : 'Failed to send message.');
+                                    setStatus((data && (data.error || data.reason)) || 'Failed to send message.', false);
                                 }
                             } catch(e){
-                                alert('Network error sending message.');
+                                setStatus('Network error sending message.', false);
                             } finally {
                                 btn.disabled = false; btn.textContent = prev;
                             }

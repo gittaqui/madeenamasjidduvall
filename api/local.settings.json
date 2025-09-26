@@ -8,9 +8,18 @@
   "PRAYER_TIMES_BLOB": "prayer-times.json",
   "WEBSITE_NODE_DEFAULT_VERSION": "~18",
   "DEV_ALLOW_NON_ADMIN": "1",
-  "MAIL_PROVIDER": "resend",
-  "RESEND_API_KEY": "re_3aoixSGa_9Q9kvy6r6aqvRKG35UnFzDv3",
-  "TO_EMAIL": "recipient@example.org",
-  "FROM_EMAIL": "onboarding@resend.dev"
+  "DEV_VERBOSE": "1",
+  "DEV_SMTP_TEST": "0",
+  "MAIL_PROVIDER": "smtp",
+  "RESEND_API_KEY": "re_E5jefwpz_E9NtcHHwRQA4yMEnnPBxF5EY",
+  "SMTP_HOST": "smtp.resend.com",
+  "SMTP_PORT": "587",
+  "SMTP_SECURE": "false",
+  "SMTP_USER": "resend",
+  "SMTP_PASS": "re_E5jefwpz_E9NtcHHwRQA4yMEnnPBxF5EY",
+  "FROM_EMAIL": "Madeena Masjid <noreply@madeenamasjid.com>",
+  "TO_EMAIL": "taqui@outlook.com",
+  "FORCE_TO_EMAIL": "taqui@outlook.com",
+  "FORCE_FROM_EMAIL": "Madeena Masjid <noreply@madeenamasjid.com>"
   }
 }
