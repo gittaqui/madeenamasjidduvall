@@ -559,10 +559,6 @@ h4, h5, h6, .h4, .h5, .h6 {
 }
 /*** Footer End ***/
 
-/* Subscribe widget */
-#subscribe-widget { position:fixed; bottom:1rem; right:1rem; z-index:1050; background:#ffffffcc; padding:12px 14px; border:1px solid #ccc; border-radius:8px; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); }
-#subscribe-widget form { display:flex; gap:6px; align-items:center; }
-#subscribe-widget input[type=email] { padding:4px 8px; font-size:.9rem; }
-#subscribe-widget button[type=submit] { white-space:nowrap; }
-#subscribe-widget #subscribe-msg { margin-top:4px; font-size:.75rem; }
-#subscribe-widget #subscribe-close { position:absolute; top:2px; right:6px; border:none; background:none; font-size:14px; line-height:1; }
+/* Footer subscribe form */
+#footer-subscribe-form { max-width: 100%; }
+#footer-subscribe-msg { color:#8fd3b0; }
