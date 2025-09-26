@@ -83,22 +83,33 @@
     if(RANGE_END) RANGE_END.value = end;
   }
   function fillMonthFromDefaults(){
-    // Prefill the month override UI with root defaults
-  byId('ov-note').value = data.note || '';
-    byId('ov-adhan-fajr').value = (data.adhan||{}).fajr || '';
-    byId('ov-adhan-dhuhr').value = (data.adhan||{}).dhuhr || '';
-    byId('ov-adhan-asr').value = (data.adhan||{}).asr || '';
-  // removed asrHanafi
-    byId('ov-adhan-maghrib').value = (data.adhan||{}).maghrib || '';
-    byId('ov-adhan-isha').value = (data.adhan||{}).isha || '';
-    byId('ov-iqamah-fajr').value = (data.iqamah||{}).fajr || '';
-    byId('ov-iqamah-dhuhr').value = (data.iqamah||{}).dhuhr || '';
-    byId('ov-iqamah-asr').value = (data.iqamah||{}).asr || '';
-  // removed asrHanafi
-    byId('ov-iqamah-maghrib').value = (data.iqamah||{}).maghrib || '';
-    byId('ov-iqamah-isha').value = (data.iqamah||{}).isha || '';
+    // Determine best source for defaults.
+    const isRootEmpty = (()=>{
+      const a = data.adhan||{}; const i = data.iqamah||{};
+      return !Object.values(a).some(v=>v) && !Object.values(i).some(v=>v);
+    })();
+    let source = data; // start with root
+    if(isRootEmpty && data.months){
+      const monthInputKey = (MONTH_INPUT.value||'').trim();
+      const currentKey = (()=>{ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
+      const monthKeys = Object.keys(data.months);
+      if(monthInputKey && data.months[monthInputKey]) source = data.months[monthInputKey];
+      else if(data.months[currentKey]) source = data.months[currentKey];
+      else if(monthKeys.length === 1) source = data.months[monthKeys[0]]; // single override
+    }
+    byId('ov-note').value = source.note || '';
+    byId('ov-adhan-fajr').value = (source.adhan||{}).fajr || '';
+    byId('ov-adhan-dhuhr').value = (source.adhan||{}).dhuhr || '';
+    byId('ov-adhan-asr').value = (source.adhan||{}).asr || '';
+    byId('ov-adhan-maghrib').value = (source.adhan||{}).maghrib || '';
+    byId('ov-adhan-isha').value = (source.adhan||{}).isha || '';
+    byId('ov-iqamah-fajr').value = (source.iqamah||{}).fajr || '';
+    byId('ov-iqamah-dhuhr').value = (source.iqamah||{}).dhuhr || '';
+    byId('ov-iqamah-asr').value = (source.iqamah||{}).asr || '';
+    byId('ov-iqamah-maghrib').value = (source.iqamah||{}).maghrib || '';
+    byId('ov-iqamah-isha').value = (source.iqamah||{}).isha || '';
     const host = byId('ov-jumuah'); host.innerHTML='';
-    (data.jumuah||[]).forEach(item=> addJumuahRow('ov', item));
+    (source.jumuah||[]).forEach(item=> addJumuahRow('ov', item));
   }
   function fillOverride(key){
     const ov = (data.months && data.months[key]) || {};
@@ -357,6 +368,15 @@
   fillOverride(MONTH_INPUT.value.trim());
   // Kick off auth status detection
   checkAdminRole().then(()=> showPrincipalDebug());
+  // If hosted on SWA and no local months loaded yet, attempt auto-fetch once to populate defaults
+  setTimeout(()=>{
+    try{
+      const host = location.hostname;
+      if((!data.months || Object.keys(data.months).length===0) && /azurestaticapps\.net$/i.test(host)){
+        fetchFromServer();
+      }
+    }catch{}
+  },200);
 
   // Sunrise fetch (Duvall, WA) using sunrise-sunset.org
   const btnRefreshSun = document.getElementById('btn-refresh-sun');
