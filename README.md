@@ -25,7 +25,7 @@ Edit these to change branding later:
 
 ## Attribution
 
-- Keep the HTML Codex credit per the template license unless you obtain a credit removal license.
+Base front-end layout adapted from the original HTML Codex free template (credit retained per license). Footer text rephrased to: "Base template adapted from HTML Codex" with a link.
 
 ## Azure Static Web Apps + Functions API
 
