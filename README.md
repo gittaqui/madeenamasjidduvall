@@ -51,7 +51,26 @@ Authorization is defined in `staticwebapp.config.json` (anonymous GET, admin POS
 GitHub Actions workflow `.github/workflows/azure-static-web-app.yml` expects secret:
 `AZURE_STATIC_WEB_APPS_API_TOKEN_GREEN_SKY_058AA821E`
 
-Add under Settings > Secrets > Actions. Deploys:
+Add under Settings > Secrets > Actions.
+
+Deploys:
+
 - Static content (repo root)
 - Functions (`api/`)
 - Storage env vars provided by portal/app settings
+
+## No-Op Build Script (Oryx)
+
+Azure Static Web Apps' Oryx build system detected a Node project because `server.js` sits at the repo root, then failed because there was no `build` (or `build:azure`) script. A minimal root `package.json` with a no-op build script was added:
+
+```json
+{
+  "scripts": {
+    "build": "echo Static site - no build needed"
+  }
+}
+```
+
+This keeps deployments green while still serving the site as pure static assets plus Functions. If you later introduce an actual asset pipeline (e.g. bundling, SCSS, minification), replace the script with the real build command and adjust `output_location` if needed.
+
+If you prefer to remove Node detection entirely, you could relocate `server.js` into a `local-dev/` folder and update `LOCAL_DEV.md` accordingly (optional).

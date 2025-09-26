@@ -1,0 +1,13 @@
+{
+  "name": "madeena-masjid-static",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Static site root for Azure Static Web Apps (no build step required)",
+  "license": "MIT",
+  "scripts": {
+    "build": "echo Static site - no build needed"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
