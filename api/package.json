@@ -8,10 +8,11 @@
   },
   "dependencies": {
     "@azure/identity": "^4.5.0",
-  "@azure/storage-blob": "^12.17.0",
-  "nodemailer": "^6.9.14",
-  "node-fetch": "^3.3.2",
-  "https-proxy-agent": "^7.0.4"
+    "@azure/storage-blob": "^12.17.0",
+    "@azure/data-tables": "^13.3.0",
+    "nodemailer": "^6.9.14",
+    "node-fetch": "^3.3.2",
+    "https-proxy-agent": "^7.0.4"
   },
   "devDependencies": {},
   "scripts": {
