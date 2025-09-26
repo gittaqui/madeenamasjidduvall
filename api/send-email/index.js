@@ -4,17 +4,41 @@ let HttpsProxyAgent; // loaded lazily only if proxy is needed
 const https = require('https');
 const dns = require('dns');
 
+// Simple in-memory rate limiting (per function instance). Suitable for light protection; not distributed.
+// Environment variables:
+// RATE_LIMIT_WINDOW_MS (default 60000), RATE_LIMIT_MAX (default 5), RATE_LIMIT_DISABLE=1 to turn off
+const rateState = new Map(); // key => { count, firstTs }
+
+function checkRateLimit(key) {
+  const disable = String(process.env.RATE_LIMIT_DISABLE || '').toLowerCase() === '1';
+  if (disable) return null;
+  const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 60000);
+  const max = Number(process.env.RATE_LIMIT_MAX || 5);
+  const now = Date.now();
+  let entry = rateState.get(key);
+  if (!entry || (now - entry.firstTs) > windowMs) {
+    entry = { count: 0, firstTs: now };
+  }
+  entry.count++;
+  rateState.set(key, entry);
+  if (entry.count > max) {
+    const retryAfterSec = Math.ceil((entry.firstTs + windowMs - now) / 1000);
+    return { retryAfterSec, max };
+  }
+  return null;
+}
+
 module.exports = async function (context, req) {
   try {
     const body = req.body || {};
-    const name = String(body.name || '').trim();
-    const email = String(body.email || '').trim();
-    const subject = String(body.subject || '').trim();
-    const message = String(body.message || '').trim();
+  const name = String(body.name || '').trim();
+  const email = String(body.email || '').trim();
+  let subject = String(body.subject || '').trim(); // let so we can tag for spam
+  const message = String(body.message || '').trim();
   const debugFlag = (req.query && req.query.debug) || body.debug;
     const hp = String(body.hp || '').trim(); // honeypot
 
-    // Basic validation
+    // Basic validation & limits
     if (hp) {
       context.res = { status: 200, body: { ok: true } }; // silently ok on bots
       return;
@@ -28,6 +52,28 @@ module.exports = async function (context, req) {
       return;
     }
 
+    const maxName = Number(process.env.MAX_NAME_LENGTH || 100);
+    const maxSubject = Number(process.env.MAX_SUBJECT_LENGTH || 200);
+    const maxMessage = Number(process.env.MAX_MESSAGE_LENGTH || 5000);
+    if (name.length > maxName) {
+      context.res = { status: 400, body: { error: `Name too long (max ${maxName} chars)` } }; return;
+    }
+    if (subject.length > maxSubject) {
+      context.res = { status: 400, body: { error: `Subject too long (max ${maxSubject} chars)` } }; return;
+    }
+    if (message.length > maxMessage) {
+      context.res = { status: 400, body: { error: `Message too long (max ${maxMessage} chars)` } }; return;
+    }
+
+    // Rate limit (per IP + coarse email uniqueness) to deter bursts
+    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.headers['x-client-ip'] || req.headers['x-real-ip'] || (req.connection && req.connection.remoteAddress) || 'unknown';
+    const rateKey = ip + '|' + (email || '');
+    const rateResult = checkRateLimit(rateKey);
+    if (rateResult) {
+      context.res = { status: 429, headers: { 'Retry-After': String(rateResult.retryAfterSec) }, body: { error: 'Rate limit exceeded', retryAfterSeconds: rateResult.retryAfterSec, limit: rateResult.max } };
+      return;
+    }
+
   // Support multiple recipients via comma/semicolon separated list
   const rawToBase = process.env.TO_EMAIL || process.env.CONTACT_TO_EMAIL || '';
   const forceToRaw = process.env.FORCE_TO_EMAIL || '';
@@ -38,21 +84,60 @@ module.exports = async function (context, req) {
   const fromEmail = forceFrom || process.env.FROM_EMAIL || process.env.CONTACT_FROM_EMAIL || toEmail;
   const provider = String(process.env.MAIL_PROVIDER || '').toLowerCase();
 
+    // --- Lightweight spam scoring ---
+    function scoreSpam(subjectVal, messageVal){
+      let score = 0; const reasons = [];
+      const msgLower = messageVal.toLowerCase();
+      const subjLower = subjectVal.toLowerCase();
+      const urlMatches = messageVal.match(/https?:\/\//gi) || [];
+      if(urlMatches.length){ score += urlMatches.length * 2; reasons.push(`urls:${urlMatches.length}`); }
+      const longMsg = messageVal.length;
+      if(longMsg > 2000){ score += 2; reasons.push('len>2000'); }
+      if(longMsg > 4000){ score += 3; reasons.push('len>4000'); }
+      const exclam = (messageVal.match(/!/g)||[]).length;
+      if(exclam > 10){ score += 2; reasons.push('exclam>10'); }
+      if(/viagra|casino|free money|bitcoin|crypto wallet|click here|winner|loan approval|100% free/i.test(msgLower)){ score += 5; reasons.push('keywords'); }
+      if(/^[A-Z0-9 \-!?]{8,}$/.test(subjectVal) && /[A-Z]/.test(subjectVal) && !/[a-z]/.test(subjectVal)){ score += 2; reasons.push('caps-subject'); }
+      const emailCount = (messageVal.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig)||[]).length;
+      if(emailCount > 3){ score += 2; reasons.push('many-emails'); }
+      const repeatSeq = /(.)\1{9,}/; // 10 identical consecutive chars
+      if(repeatSeq.test(messageVal)){ score += 2; reasons.push('repeat-chars'); }
+      return { score, reasons };
+    }
+    const spamReject = Number(process.env.SPAM_REJECT_THRESHOLD || 20);
+    const spamTag = Number(process.env.SPAM_TAG_THRESHOLD || 10);
+    const { score: spamScore, reasons: spamReasons } = scoreSpam(subject, message);
+    let spamTagged = false;
+    if (spamScore >= spamReject) {
+      context.res = { status: 400, body: { error: 'Rejected as spam', spamScore, reasons: spamReasons } };
+      return;
+    }
+    if (spamScore >= spamTag) {
+      subject = `[Possible Spam] ${subject}`;
+      spamTagged = true;
+    }
+
     const html = `
       <h2>New contact message</h2>
       <p><strong>Name:</strong> ${escapeHtml(name)}</p>
       <p><strong>Email:</strong> ${escapeHtml(email)}</p>
       <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
       <p><strong>Message:</strong><br/>${escapeHtml(message).replace(/\n/g,'<br/>')}</p>
+      <p><em>SpamScore: ${spamScore}${spamReasons.length ? ' ('+spamReasons.map(r=>escapeHtml(r)).join(', ')+')' : ''}</em></p>
     `;
-    const text = `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`;
+    const text = `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\nSpamScore: ${spamScore}${spamReasons.length? ' ('+spamReasons.join(', ')+')':''}\n\n${message}`;
+
+    const customHeaders = {
+      'X-Contact-SpamScore': String(spamScore),
+      'X-Contact-SpamReasons': spamReasons.join(',') || 'none'
+    };
 
   // Choose provider: explicit MAIL_PROVIDER wins; otherwise auto-detect by available env vars
   const hasSmtp = !!process.env.SMTP_HOST;
   const hasGraph = !!(process.env.GRAPH_TENANT_ID && process.env.GRAPH_CLIENT_ID && process.env.GRAPH_CLIENT_SECRET && (process.env.GRAPH_SENDER_UPN || process.env.GRAPH_SENDER_ID));
   const hasResend = !!process.env.RESEND_API_KEY;
 
-    async function sendViaSmtp() {
+  async function sendViaSmtp() {
       if (!nodemailer) nodemailer = require('nodemailer');
       const host = process.env.SMTP_HOST;
       const port = Number(process.env.SMTP_PORT || 587);
@@ -68,7 +153,7 @@ module.exports = async function (context, req) {
           secure: testAccount.smtp.secure,
           auth: { user: testAccount.user, pass: testAccount.pass }
         });
-        const info = await etherealTransport.sendMail({ from: fromEmail || 'no-reply@example.com', to: toEmail || testAccount.user, subject: `[Contact] ${subject}`, text, html, replyTo: email });
+  const info = await etherealTransport.sendMail({ from: fromEmail || 'no-reply@example.com', to: toEmail || testAccount.user, subject: `[Contact] ${subject}`, text, html, replyTo: email, headers: customHeaders });
         // Expose preview URL in response for local testing
         context.res = { status: 200, body: { ok: true, previewUrl: nodemailer.getTestMessageUrl(info) } };
         return;
@@ -76,7 +161,7 @@ module.exports = async function (context, req) {
       if (!host || !toEmail || !fromEmail) throw new Error('SMTP not configured');
       const transporter = nodemailer.createTransport({ host, port, secure, auth: user && pass ? { user, pass } : undefined });
       try {
-        await transporter.sendMail({ from: fromEmail, to: toList.length ? toList.join(',') : toEmail, subject: `[Contact] ${subject}`, text, html, replyTo: email });
+  await transporter.sendMail({ from: fromEmail, to: toList.length ? toList.join(',') : toEmail, subject: `[Contact] ${subject}`, text, html, replyTo: email, headers: customHeaders });
       } catch (smtpErr) {
         const msg = String(smtpErr && (smtpErr.response || smtpErr.message) || smtpErr);
         if (/\b450\b/i.test(msg) && /verify( a)? domain/i.test(msg)) {
@@ -116,7 +201,8 @@ module.exports = async function (context, req) {
           body: { contentType: 'HTML', content: html },
           toRecipients: (toList.length ? toList : [toEmail]).map(addr => ({ emailAddress: { address: addr } })),
           replyTo: email ? [{ emailAddress: { address: email } }] : undefined,
-          from: fromEmail ? { emailAddress: { address: fromEmail } } : undefined
+          from: fromEmail ? { emailAddress: { address: fromEmail } } : undefined,
+          internetMessageHeaders: Object.entries(customHeaders).map(([k,v])=>({ name:k, value:v }))
         },
         saveToSentItems: false
       };
@@ -135,7 +221,7 @@ module.exports = async function (context, req) {
       }
       const apiKey = process.env.RESEND_API_KEY;
       const from = fromEmail || 'noreply@madeenamasjid.com';
-  const payload = { from, to: toList.length ? toList : [toEmail], subject: `[Contact] ${subject}`, html, text, reply_to: email };
+  const payload = { from, to: toList.length ? toList : [toEmail], subject: `[Contact] ${subject}`, html, text, reply_to: email, headers: customHeaders };
       // Optional timeout (ms) for connect/read to avoid hanging in restricted networks
   const timeoutMs = Number(process.env.RESEND_TIMEOUT_MS || 45000);
   const maxRetries = Number(process.env.RESEND_RETRIES || 1); // additional attempts after first
@@ -243,7 +329,11 @@ module.exports = async function (context, req) {
     }
 
     if (String(process.env.DEV_VERBOSE||'').toLowerCase()==='1') {
-  context.log('[send-email] provider=%s from=%s to=%s (list=%j) forceTo=%s rawFromEnv=%s forceFrom=%s', provider, fromEmail, toEmail, toList, forceToRaw || '', process.env.FROM_EMAIL || '', forceFrom || '');
+  const redact = String(process.env.REDACT_LOGS||'').toLowerCase()==='1';
+  context.log('[send-email] provider=%s from=%s to=%s (list=%j) spamScore=%d tagged=%s reasons=%j forceTo=%s rawFromEnv=%s forceFrom=%s', provider, fromEmail, toEmail, toList, spamScore, spamTagged, spamReasons, forceToRaw || '', process.env.FROM_EMAIL || '', forceFrom || '');
+  if(!redact){
+    context.log('[send-email] subject="%s" msgLength=%d', subject, message.length);
+  }
     }
 
     // If debug=1 provided, return the effective configuration without sending
