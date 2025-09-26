@@ -9,6 +9,8 @@
   "WEBSITE_NODE_DEFAULT_VERSION": "~18",
   "DEV_ALLOW_NON_ADMIN": "1",
   "DEV_VERBOSE": "1",
+  "LOCAL_DISABLE_TIMER": "1",
+  "AzureWebJobs.cleanup-pending.Disabled": "true",
   "DEV_SMTP_TEST": "0",
   "MAIL_PROVIDER": "smtp",
   "RESEND_API_KEY": "re_E5jefwpz_E9NtcHHwRQA4yMEnnPBxF5EY",

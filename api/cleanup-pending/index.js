@@ -18,6 +18,10 @@ async function isLocalAzuriteAvailable(){
 }
 
 module.exports = async function (context){
+  if(process.env.LOCAL_DISABLE_TIMER){
+    context.log('[cleanup-pending] skipped due to LOCAL_DISABLE_TIMER');
+    return;
+  }
   if(!await isLocalAzuriteAvailable()){
     context.log('[cleanup-pending] Azurite Table endpoint not available locally; skipping cleanup (dev mode).');
     return;

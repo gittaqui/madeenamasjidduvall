@@ -10,18 +10,29 @@ function getCredential(){
 
 function getTableClient(){
   const tableName = process.env.SUBSCRIBERS_TABLE || 'Subscribers';
-  const accountUrl = process.env.STORAGE_ACCOUNT_TABLE_URL || process.env.STORAGE_ACCOUNT_BLOB_URL?.replace(/blob\./,'table.') || process.env.TABLES_ACCOUNT_URL;
-  if(!accountUrl) throw new Error('Missing STORAGE_ACCOUNT_TABLE_URL or STORAGE_ACCOUNT_BLOB_URL (to derive) for Table endpoint');
-  const credential = (process.env.STORAGE_CONNECTION_STRING || process.env.TABLES_SAS) ? null : getCredential();
-  if(process.env.TABLES_SAS){
-    const { AzureSASCredential } = require('@azure/data-tables');
-    return TableClient.fromTableUrl(`${accountUrl}/${tableName}${process.env.TABLES_SAS.startsWith('?')?process.env.TABLES_SAS:'?'+process.env.TABLES_SAS}`);
-  }
+  // Fast path: full storage connection string (e.g. Azurite UseDevelopmentStorage=true or real account)
   if(process.env.STORAGE_CONNECTION_STRING){
-    const { TableServiceClient } = require('@azure/data-tables');
-    const tsc = TableServiceClient.fromConnectionString(process.env.STORAGE_CONNECTION_STRING);
-    return tsc.getTableClient(tableName);
+    // Use direct TableClient factory for connection string (works with Azurite and real storage)
+    return TableClient.fromConnectionString(process.env.STORAGE_CONNECTION_STRING, tableName);
   }
+
+  // For SAS or managed identity / default credential flows we need the account URL
+  const accountUrl = process.env.STORAGE_ACCOUNT_TABLE_URL
+    || process.env.STORAGE_ACCOUNT_BLOB_URL?.replace(/blob\./,'table.')
+    || process.env.TABLES_ACCOUNT_URL;
+
+  if(!accountUrl){
+    throw new Error('Missing STORAGE_ACCOUNT_TABLE_URL (or derivable STORAGE_ACCOUNT_BLOB_URL) and no STORAGE_CONNECTION_STRING present');
+  }
+
+  if(process.env.TABLES_SAS){
+    // Build URL with SAS token (no credential object needed)
+    const fullUrl = `${accountUrl}/${tableName}${process.env.TABLES_SAS.startsWith('?')?process.env.TABLES_SAS:'?'+process.env.TABLES_SAS}`;
+    return TableClient.fromTableUrl(fullUrl);
+  }
+
+  // Default: use managed identity / default credentials with table endpoint URL
+  const credential = getCredential();
   return new TableClient(`${accountUrl}/${tableName}`, credential);
 }
 
