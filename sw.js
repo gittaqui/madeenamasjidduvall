@@ -1,5 +1,5 @@
 // Basic service worker for Madeena Masjid Duvall
-const CACHE_NAME = 'mmduvall-v8';
+const CACHE_NAME = 'mmduvall-v9';
 const ASSETS = [
   '/',
   '/index.html',

@@ -93,6 +93,16 @@
       // keep placeholders
       console.warn('Prayer times unavailable:', e);
     }
+    // Extra safety: if a diagnostic string slipped through (cached older JS), clear it
+    try {
+      const noteEl = box.querySelector('[data-key="note"]');
+      if(noteEl){
+        const t = (noteEl.textContent||'').toLowerCase();
+        if(t.includes('fallback copy') || t.includes('read-only unless external storage')){
+          noteEl.textContent='';
+        }
+      }
+    }catch{}
   }
   document.addEventListener('DOMContentLoaded', load);
 })();
