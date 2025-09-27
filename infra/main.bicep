@@ -78,12 +78,14 @@ resource swa 'Microsoft.Web/staticSites@2024-04-01' = {
 
 // App settings for the Functions runtime inside SWA
 var storageBlobEndpoint = 'https://${sa.name}.blob.${environment().suffixes.storage}'
+var storageTableEndpoint = 'https://${sa.name}.table.${environment().suffixes.storage}'
 
 resource swaFunctionSettings 'Microsoft.Web/staticSites/config@2022-03-01' = {
   name: 'functionappsettings'
   parent: swa
   properties: {
     STORAGE_ACCOUNT_BLOB_URL: storageBlobEndpoint
+    STORAGE_ACCOUNT_TABLE_URL: storageTableEndpoint
     PRAYER_TIMES_CONTAINER: containerName
     PRAYER_TIMES_BLOB: blobName
   }
@@ -91,6 +93,8 @@ resource swaFunctionSettings 'Microsoft.Web/staticSites/config@2022-03-01' = {
 
 // Assign Storage Blob Data Contributor to the SWA managed identity at the storage account scope
 var storageBlobDataContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
+// Storage Table Data Contributor role id
+var storageTableDataContributorRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-bde5-4f95-b11b-0c8e944b753d')
 
 resource swaToStorageRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(sa.id, storageBlobDataContributorRoleId, 'swa-mi')
@@ -102,9 +106,21 @@ resource swaToStorageRole 'Microsoft.Authorization/roleAssignments@2022-04-01' =
   }
 }
 
+// Grant Table Data Contributor so managed identity can create/read Azure Tables
+resource swaToStorageTableRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(sa.id, storageTableDataContributorRoleId, 'swa-mi-table')
+  scope: sa
+  properties: {
+    roleDefinitionId: storageTableDataContributorRoleId
+    principalId: swa.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 output staticWebAppName string = swa.name
 output staticWebAppHostname string = swa.properties.defaultHostname
 output storageAccountName string = sa.name
 output storageBlobEndpoint string = storageBlobEndpoint
+output storageTableEndpoint string = storageTableEndpoint
 output prayerTimesContainer string = containerName
 output prayerTimesBlob string = blobName
