@@ -69,6 +69,7 @@
       const data = await resp.json();
       if(!data || !data.items){ throw new Error('Malformed response'); }
       allItems = data.items;
+  if(!allItems.length){ console.info('[admin-rsvps] No RSVP rows returned. Verify SWA storage points to external data or that external app has stored rows yet.'); }
       buildEventOptions(data.events||[]);
       applyFilters();
       notesBox.textContent = `Showing up to ${limit} entries. Use CSV export for complete dataset.`;

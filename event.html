@@ -287,6 +287,7 @@
         <script>
             window.RSVP_API_BASE = window.RSVP_API_BASE || 'https://madeena-rsvp-api.azurewebsites.net/api';
         </script>
+        <script src="js/subscribe.js"></script>
     <script src="js/events.js"></script>
     <script>
         (function(){
@@ -317,7 +318,8 @@
             }
             function refreshStats(){
                 if(!currentEventId) return;
-                fetch(`api/rsvp/stats?eventId=${encodeURIComponent(currentEventId)}`).then(r=>r.json()).then(d=>{
+                // Updated stats endpoint path
+                fetch(`/api/rsvp-stats?eventId=${encodeURIComponent(currentEventId)}`).then(r=>r.json()).then(d=>{
                     if(!d.ok) return;
                     statsEl.textContent = `Confirmed: ${d.confirmed} (Adults: ${d.adults}, Children: ${d.children}) | Pending: ${d.pending}`;
                 }).catch(()=>{});

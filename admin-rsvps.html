@@ -74,6 +74,11 @@
     <p class="small text-muted mt-2" id="notesBox"></p>
   </main>
   <script src="/js/auth.js"></script>
+  <script>
+    // Ensure external API base is available on admin page too
+    window.RSVP_API_BASE = window.RSVP_API_BASE || 'https://madeena-rsvp-api.azurewebsites.net/api';
+  </script>
+  <script src="/js/subscribe.js"></script>
   <script src="/js/admin-rsvps.js" type="module"></script>
 </body>
 </html>
