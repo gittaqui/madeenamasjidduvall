@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
+    "FROM_EMAIL": "Madeena Masjid <noreply@madeenamasjid.com>",
+    "TO_EMAIL": "admin@example.com",
+    "SUBSCRIBERS_TABLE": "Subscribers",
+    "RSVP_TABLE_NAME": "Rsvps"
+  }
+}

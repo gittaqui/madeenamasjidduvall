@@ -1,0 +1,15 @@
+{
+  "name": "madeena-ext-functions",
+  "version": "0.1.0",
+  "private": true,
+  "description": "External Azure Functions (Subscribe + RSVP only)",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "func start",
+    "test": "echo 'No tests yet'"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.2.2",
+    "@azure/identity": "^4.4.0"
+  }
+}
