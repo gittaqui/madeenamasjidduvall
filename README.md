@@ -74,3 +74,21 @@ npm install --prefix api @azure/data-tables
 ```
 
 If you later add a front-end build pipeline, reintroduce a root `package.json` with actual build steps and update the GitHub Actions workflow (`app_location`, `output_location`).
+
+## Branch Strategy
+
+We use two primary branches:
+
+- `main`: Production deployment (static site + Azure Functions in `api/`). All subscriber / RSVP functionality remains active here.
+- `local-testing`: Safe sandbox for local experiments. Changes here are not deployed until merged to `main`. You can prototype alternative storage backends or refactors without affecting production.
+
+Rationale (chosen Option A): The site currently depends on the Functions API (`/api/subscribe`, `/api/rsvp`, `/api/prayer-times`). Removing or excluding `api/` from production would break core features. Consolidating dependencies under `api/` keeps deploy size lean while retaining dynamic capability.
+
+If you ever decide to spin out the backend to an external Functions App:
+1. Create a new repo or Azure Function resource.
+2. Expose the endpoints under a stable domain (e.g. `https://functions.madeenamasjid.com`).
+3. Update front-end JS fetch URLs and `staticwebapp.config.json` route auth.
+4. Remove `api/` and set `api_location: ""` (or delete) in the GitHub Actions workflow.
+
+For an on-demand API disable toggle (future Option C), a simple approach is to add a workflow conditional that skips `api_location` when a marker file (e.g. `.no-api`) exists on `main`. Not implemented yet—kept simple for reliability.
+
