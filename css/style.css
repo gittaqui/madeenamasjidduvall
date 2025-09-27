@@ -39,6 +39,11 @@
     color: var(--bs-primary);
 }
 
+/* Small helper text used on Islam 101 resource list */
+.helper-note {
+    font-size: .8rem;
+}
+
 /* Theme overrides: set brand green and replace mustard accents */
 :root {
     --bs-primary: #007A33;
