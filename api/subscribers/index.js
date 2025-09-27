@@ -65,11 +65,27 @@ module.exports = async function (context, req){
     }
   }
   if(req.method === 'DELETE'){
-    const hash = (req.query.hash||'').toLowerCase();
-    const part = status === 'pending' ? 'pending' : status === 'unsub' ? 'unsub' : 'active';
-    if(!hash) return context.res = { status:400, body:{ error:'Missing hash' } };
-    try { await table.deleteEntity(part, hash); } catch (e){ return context.res = { status:404, body:{ error:'Not found' } }; }
-    return context.res = { status:200, body:{ ok:true } };
+    // Support deletion by hash (preferred) or email (will be hashed).
+    let hash = (req.query.hash||'').toLowerCase();
+    const emailParam = (req.query.email||'').trim().toLowerCase();
+    if(!hash && emailParam){
+      hash = crypto.createHash('sha256').update(emailParam,'utf8').digest('hex');
+    }
+    if(!hash) return context.res = { status:400, body:{ error:'Missing hash or email' } };
+    const normalizedStatus = status.toLowerCase();
+    let partitions;
+    if(normalizedStatus === 'any'){
+      partitions = ['active','pending','unsub'];
+    } else {
+      const preferred = normalizedStatus === 'pending' ? 'pending' : normalizedStatus === 'unsub' ? 'unsub' : 'active';
+      // Try preferred first, then others so a stale UI filter still succeeds.
+      const others = ['active','pending','unsub'].filter(p=>p!==preferred);
+      partitions = [preferred, ...others];
+    }
+    for(const p of partitions){
+      try { await table.deleteEntity(p, hash); return context.res = { status:200, body:{ ok:true, deletedFrom:p } }; } catch(e){ /* ignore and continue */ }
+    }
+    return context.res = { status:404, body:{ error:'Not found in any partition' } };
   }
   const part = status === 'pending' ? 'pending' : status === 'unsub' ? 'unsub' : 'active';
   const results = [];

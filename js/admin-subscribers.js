@@ -34,9 +34,9 @@
 
   async function del(hash){
     if(!confirm('Delete this subscriber?')) return;
-    const status = currentStatus();
+    // Use status=any to allow deletion after partition changes (e.g., pending -> active)
     try {
-      const res = await fetch(`/api/subscribers?status=${encodeURIComponent(status)}&hash=${encodeURIComponent(hash)}`, { method:'DELETE', headers:{'Accept':'application/json'} });
+      const res = await fetch(`/api/subscribers?status=any&hash=${encodeURIComponent(hash)}`, { method:'DELETE', headers:{'Accept':'application/json'} });
       if(!res.ok){ const t = await res.text(); throw new Error(`Delete failed (${res.status}) ${t}`); }
       await load();
     } catch(err){ alert(err.message); }
