@@ -44,6 +44,21 @@
     font-size: .8rem;
 }
 
+/* Prayer iframe fallback overlay */
+#prayer-iframe-fallback {
+    background: linear-gradient(135deg,#004d20,#007a33);
+    color:#fff;
+}
+#next-iqamah-wrapper {
+    border-color: #e3e3e3 !important;
+}
+
+/* Tighter spacing for events section when placed immediately after hero/about block */
+.events-tight { margin-top: -8rem; }
+@media (max-width: 992px){
+    .events-tight { margin-top: -3rem; }
+}
+
 /* Theme overrides: set brand green and replace mustard accents */
 :root {
     --bs-primary: #007A33;
@@ -308,6 +323,33 @@ h4, h5, h6, .h4, .h5, .h6 {
 .flash-banner .flash-text { flex: 1 1 auto; }
 .flash-banner .flash-close { color: var(--bs-light); opacity: .9; border: 1px solid rgba(255,255,255,.5); }
 .flash-banner .flash-close:hover { opacity: 1; }
+
+/* Feature items (vision / mission) */
+.feature-item { position: relative; padding: .25rem .25rem .25rem 0; }
+.feature-item > span { display:inline-flex; width:56px; height:56px; border-radius:50%; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+.feature-item i { font-size:1.5rem; }
+.feature-item h5 { margin-top: .25rem; margin-bottom:.25rem; }
+.feature-item p { font-size:.95rem; line-height:1.35rem; }
+
+/* Prayer widget framing */
+.prayer-widget { border:1px solid #e3e8e5; border-radius: .75rem; overflow:hidden; background:#ffffffcf; -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); box-shadow:0 8px 24px -8px rgba(0,0,0,.12); }
+.prayer-widget iframe { display:block; }
+#prayer-iframe-fallback { border-radius:.75rem; }
+
+/* Event highlight container */
+.event-highlight { background: linear-gradient(135deg,#f8faf9,#eef7f1); border:1px solid #dbe7de; border-radius: .85rem; box-shadow:0 6px 18px -6px rgba(0,0,0,.10); }
+.event-highlight #home-next-event { min-height: 3.25rem; }
+
+/* Section header accent bar */
+.section-header { position:relative; }
+.section-header:before { content:""; position:absolute; left:0; bottom:-6px; width:72px; height:4px; background: linear-gradient(90deg,#007A33,#00b34a); border-radius:2px; }
+.section-header h2 { font-size:2.1rem; letter-spacing:-.5px; }
+
+@media (max-width: 992px){
+    .section-header h2 { font-size:1.75rem; }
+    .feature-item > span { width:48px; height:48px; }
+    .feature-item i { font-size:1.25rem; }
+}
 
 
 /*** About Start ***/

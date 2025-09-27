@@ -125,25 +125,25 @@
         <!-- About Satrt -->
         <div class="container-fluid about py-5">
             <div class="container py-5">
-                <div class="row g-5 mb-5">
+                <div class="row g-5 mb-4">
                      
                     <div class="col-xl-6 wow fadeIn" data-wow-delay="0.5s">
                         <p class="fs-5 text-uppercase text-primary">About Madeena Masjid Duvall</p>
                         <h1 class="display-5 pb-4 m-0">Allah Help Those Who Help Themselves</h1>
                         <div class="row g-4 mb-4">
                             <div class="col-md-6">
-                                <div class="ps-3 d-flex align-items-center justify-content-start">
-                                    <span class="bg-primary btn-md-square rounded-circle mt-4 me-2"><i class="fa fa-eye text-dark fa-4x mb-5 pb-2"></i></span>
-                                    <div class="ms-4">
+                                <div class="feature-item d-flex align-items-start">
+                                    <span class="bg-primary me-3"><i class="fa fa-eye text-dark"></i></span>
+                                    <div>
                                         <h5>Our Vision</h5>
                                         <p>To be a welcoming house of worship that nurtures faith, character, and service for the Duvall community.</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="ps-3 d-flex align-items-center justify-content-start">
-                                    <span class="bg-primary btn-md-square rounded-circle mt-4 me-2"><i class="fa fa-flag text-dark fa-4x mb-5 pb-2"></i></span>
-                                    <div class="ms-4">
+                                <div class="feature-item d-flex align-items-start">
+                                    <span class="bg-primary me-3"><i class="fa fa-flag text-dark"></i></span>
+                                    <div>
                                         <h5>Our Mission</h5>
                                         <p>Establish daily prayers, offer Maktab for kids and Hifz programs, provide Islamic education for all ages, and serve our neighbors through compassion and outreach.</p>
                                     </div>
@@ -153,20 +153,27 @@
                         
                         
                     </div>
-                    <div class="col-xl-6 wow fadeIn" data-wow-delay="0.2s">
-                        <div class="p-0 h-100" id="prayer-schedule" aria-label="Prayer timetable embed">
-                            <iframe src="https://timing.athanplus.com/masjid/widgets/embed?theme=1&masjid_id=yLjOlDAQ" type="text/html" width="100%" height="615" frameborder="0" allowtransparency="true" title="Prayer Timetable"></iframe>
-                        </div>
-                    </div>
+                                                            <div class="col-xl-6 wow fadeIn" data-wow-delay="0.2s">
+                                                                    <div class="position-relative prayer-widget" id="prayer-schedule" aria-label="Prayer timetable">
+                                                                        <iframe id="prayer-iframe" src="https://timing.athanplus.com/masjid/widgets/embed?theme=1&masjid_id=yLjOlDAQ" type="text/html" width="100%" height="700" frameborder="0" allowtransparency="true" title="Prayer Timetable"></iframe>
+                                                                        <div id="prayer-iframe-fallback" class="position-absolute top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center text-center p-4">
+                                                                            <div>
+                                                                                <p class="fw-bold mb-2">Prayer timetable unavailable.</p>
+                                                                                <p class="mb-3 small">Please check back shortly. If this persists, contact the site administrator.</p>
+                                                                                <button class="btn btn-outline-light btn-sm" id="retry-prayer-embed" type="button">Retry</button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                            </div>
                 </div>
                 <!-- Events Start (moved above Maktab banner) -->
-                <div class="container-fluid event py-5">
-                        <div class="container py-5">
-                                <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="container-fluid event py-4 events-tight">
+            <div class="container py-4 event-highlight">
+                                <div class="section-header d-flex align-items-center justify-content-between mb-3">
                                     <h2 class="mb-0 wow fadeIn" data-wow-delay="0.1s">Next <span class="text-primary">Event</span></h2>
                                     <a href="event.html" class="btn btn-outline-primary">View all events</a>
                                 </div>
-                                <div id="home-next-event" aria-live="polite"></div>
+                                <div id="home-next-event" aria-live="polite" class="mt-2"></div>
                                 <noscript>
                                     <p class="text-dark">Please enable JavaScript to view the next event.</p>
                                 </noscript>
@@ -297,7 +304,20 @@
 
                 <!-- Template Javascript -->
                 <script src="js/main.js"></script>
-                <script src="js/auth.js"></script>
+                                                <script src="js/auth.js"></script>
+                                                <script>
+                                                (function(){
+                                                    const iframe = document.getElementById('prayer-iframe');
+                                                    const fallback = document.getElementById('prayer-iframe-fallback');
+                                                    const retryBtn = document.getElementById('retry-prayer-embed');
+                                                    if(!iframe) return;
+                                                    let loaded = false;
+                                                    const timer = setTimeout(()=>{ if(!loaded && fallback){ fallback.classList.remove('d-none'); } }, 8000);
+                                                    iframe.addEventListener('load', ()=>{ loaded = true; clearTimeout(timer); if(fallback) fallback.classList.add('d-none'); });
+                                                    iframe.addEventListener('error', ()=>{ loaded=false; clearTimeout(timer); if(fallback) fallback.classList.remove('d-none'); });
+                                                    if(retryBtn){ retryBtn.addEventListener('click', ()=>{ if(fallback) fallback.classList.add('d-none'); loaded=false; iframe.src = iframe.src.split('#')[0]; }); }
+                                                })();
+                                                </script>
                                 <script src="js/config.js"></script>
                                 <script src="js/schedule.js"></script>
                 <script src="js/events-teaser.js"></script>
