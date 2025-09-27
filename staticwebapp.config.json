@@ -7,6 +7,7 @@
     { "route": "/api/rsvps", "methods": ["GET", "DELETE"], "allowedRoles": ["admin"] },
     { "route": "/api/subscribers", "methods": ["GET", "POST", "DELETE"], "allowedRoles": ["admin"] },
   { "route": "/api/cleanup-pending", "methods": ["GET", "POST"], "allowedRoles": ["admin"] },
+  { "route": "/api/diag-tables", "methods": ["GET"], "allowedRoles": ["admin"] },
     { "route": "/api/prayer-times", "methods": ["GET"], "allowedRoles": ["anonymous"] },
     { "route": "/api/prayer-times", "methods": ["POST"], "allowedRoles": ["admin"] },
     { "route": "/api/prayer-times", "methods": ["OPTIONS"], "allowedRoles": ["anonymous"] },
