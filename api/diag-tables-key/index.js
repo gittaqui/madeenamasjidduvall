@@ -1,11 +1,15 @@
 // Admin-key protected diagnostic variant (does not rely on SWA role gate)
 const { getTableClient } = require('../shared/tableClient');
+const { hasRole } = require('../shared/clientPrincipal');
 
 module.exports = async function (context, req){
   const adminKey = process.env.SUBSCRIBERS_ADMIN_KEY;
   const provided = req.query.adminKey || req.headers['x-admin-key'];
   if(!adminKey || adminKey !== provided){
-    return context.res = { status:401, body:{ ok:false, error:'unauthorized', hint:'supply adminKey query param' } };
+    // Fallback to SWA role based auth (admin)
+    if(!hasRole(req, 'admin')){
+      return context.res = { status:401, body:{ ok:false, error:'unauthorized', hint:'supply adminKey or login with admin role' } };
+    }
   }
   const details = { env:{}, steps:[] };
   for(const k of ['STORAGE_ACCOUNT_TABLE_URL','STORAGE_ACCOUNT_BLOB_URL','TABLES_ACCOUNT_URL','SUBSCRIBERS_TABLE']){

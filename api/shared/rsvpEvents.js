@@ -10,7 +10,22 @@ async function tryRead(p){
   } catch { return null; }
 }
 
-async function loadEvents(){
+function resolveOrigin(req){
+  const candidates = [];
+  if(process.env.SITE_ORIGIN) candidates.push(process.env.SITE_ORIGIN);
+  const xf = req && (req.headers['x-forwarded-host'] || req.headers['host']);
+  if(xf) candidates.push(`https://${xf}`);
+  if(process.env.WEBSITE_HOSTNAME) candidates.push(`https://${process.env.WEBSITE_HOSTNAME}`);
+  for(const c of candidates){
+    if(c){
+      const norm = c.replace(/\/$/,'');
+      if(/^https?:\/\//i.test(norm)) return norm;
+    }
+  }
+  return null;
+}
+
+async function loadEvents(req){
   // Attempt multiple filesystem locations (local dev: root has events.json; prod Functions: root may not include it)
   const candidates = [
     path.join(__dirname, '..', '..', 'events.json'), // repo root when running locally
@@ -21,8 +36,8 @@ async function loadEvents(){
     const data = await tryRead(p);
     if(data && Array.isArray(data)) return data;
   }
-  // Fallback: HTTP fetch from SITE_ORIGIN if provided (Node 18 global fetch available)
-  const origin = (process.env.SITE_ORIGIN||'').replace(/\/$/,'');
+  // Fallback: HTTP fetch from any resolvable origin (SITE_ORIGIN, headers, WEBSITE_HOSTNAME)
+  const origin = resolveOrigin(req);
   if(origin){
     try {
       const resp = await fetch(origin + '/events.json', { method:'GET', headers:{'Accept':'application/json'} });
@@ -30,7 +45,7 @@ async function loadEvents(){
         const json = await resp.json();
         if(Array.isArray(json)) return json;
       }
-    } catch {/* ignore */}
+    } catch {/* ignore network issues */}
   }
   return []; // final fallback
 }

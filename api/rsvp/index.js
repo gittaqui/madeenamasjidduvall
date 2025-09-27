@@ -21,7 +21,7 @@ module.exports = async function(context, req){
   if(!validateEventId(eventId)) return context.res = { status:400, body:{ error:'invalid_event' } };
 
   // Ensure event exists and is upcoming
-  const events = await loadEvents();
+  const events = await loadEvents(req);
   const ev = events.find(e=> e.id === eventId && e.published !== false);
   if(!ev) return context.res = { status:404, body:{ error:'event_not_found' } };
   try { const d = new Date(ev.date+'T00:00:00'); if(isNaN(d) || d < new Date(Date.now()-86400000)) return context.res = { status:400, body:{ error:'event_closed' } }; } catch {}

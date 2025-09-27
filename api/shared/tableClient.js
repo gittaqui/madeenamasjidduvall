@@ -9,7 +9,13 @@ function getCredential(){
 }
 
 function getTableClient(){
-  const tableName = process.env.SUBSCRIBERS_TABLE || 'Subscribers';
+  let tableName = process.env.SUBSCRIBERS_TABLE || 'Subscribers';
+  if(typeof tableName !== 'string'){
+    // Defensive: coerce and log
+    const coerced = String(tableName);
+    console.warn('[tableClient] Non-string SUBSCRIBERS_TABLE value detected, coercing', tableName);
+    tableName = coerced;
+  }
   // Fast path: full storage connection string (e.g. Azurite UseDevelopmentStorage=true or real account)
   if(process.env.STORAGE_CONNECTION_STRING){
     // Use direct TableClient factory for connection string (works with Azurite and real storage)
