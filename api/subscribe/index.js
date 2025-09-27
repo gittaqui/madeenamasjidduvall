@@ -27,6 +27,9 @@ module.exports = async function (context, req){
         return context.res = { status:500, body:{ error:'table-client-error', detail: inner.message } };
       }
     } else {
+      if(/table with value "\[object Object\]" must be of type string/i.test(e.message||'')){
+        return context.res = { status:500, body:{ error:'table-env-invalid', detail:'SUBSCRIBERS_TABLE app setting appears to be non-string (object). Remove it or set plain text value Subscribers.' } };
+      }
       return context.res = { status:500, body:{ error:'table-client-error', detail: e.message } };
     }
   }

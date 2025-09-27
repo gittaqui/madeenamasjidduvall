@@ -26,7 +26,14 @@ module.exports = async function(context, req){
   if(!ev) return context.res = { status:404, body:{ error:'event_not_found' } };
   try { const d = new Date(ev.date+'T00:00:00'); if(isNaN(d) || d < new Date(Date.now()-86400000)) return context.res = { status:400, body:{ error:'event_closed' } }; } catch {}
 
-  const table = getRsvpTable();
+  let table;
+  try { table = getRsvpTable(); }
+  catch(e){
+    if(/table with value "\[object Object\]" must be of type string/i.test(e.message||'')){
+      return context.res = { status:500, body:{ error:'table-env-invalid', detail:'SUBSCRIBERS_TABLE or RSVP_TABLE_NAME app setting appears to be non-string. Remove it or set plain text value Rsvps.' } };
+    }
+    return context.res = { status:500, body:{ error:'table-client-error', detail:e.message } };
+  }
   try { try { await table.createTable(); } catch {}
   const partitionKey = eventId; // event scoped
     const rowKey = email;
