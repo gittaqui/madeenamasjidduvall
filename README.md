@@ -46,6 +46,35 @@ Legacy equivalents:
 
 Authorization is defined in `staticwebapp.config.json` (anonymous GET, admin POST). The API double-checks the `admin` role from `X-MS-CLIENT-PRINCIPAL`.
 
+### Table Storage (Subscribers / RSVPs) – Unified & Secure Access
+
+The project now prefers a **single storage account** accessed via **Managed Identity** (no connection strings) for:
+
+- Subscribers table (`Subscribers`)
+- RSVPs table (`Rsvps`)
+
+Front-end submission endpoints (subscribe / rsvp) have been migrated to an external Azure Function App. Internal admin & stats endpoints (`/api/subscribers`, `/api/rsvps`, `/api/rsvp-stats`, diagnostics) read the same tables by using the Static Web App managed identity.
+
+To enable / verify this setup:
+
+1. Assign the Static Web App managed identity the role: `Storage Table Data Contributor` on the chosen storage account.
+2. SWA App Settings (no secrets required):
+   - `STORAGE_ACCOUNT_TABLE_URL` = `https://<account>.table.core.windows.net`
+   - `SUBSCRIBERS_TABLE` = `Subscribers`
+   - `RSVP_TABLE_NAME` = `Rsvps`
+   - (Optional) `MANAGED_IDENTITY_CLIENT_ID` if using a user-assigned identity.
+3. Remove (or leave blank) any legacy `STORAGE_CONNECTION_STRING` or `TABLES_SAS` to force Managed Identity auth.
+4. (Optional) Set `TABLES_VERBOSE_LOGGING=1` to emit a one-line log indicating which auth mode was used.
+
+If you still have historical data in a *previous* storage account, migrate by exporting entities (Azure Storage Explorer / AzCopy) and upserting into the new account before assigning the identity.
+
+Diagnostics:
+
+- `GET /api/diag-tables` – shows which environment variables are present and will log `authMode` when verbose logging is enabled.
+- `GET /api/diag-storage-full?key=<ADMIN_KEY>` – deeper scan (requires admin key) to confirm partition/entity counts.
+
+All legacy internal write endpoints for subscribe/RSVP now return **410 Gone** with a pointer to the external base URL to avoid duplicate state.
+
 ## Existing Deployment
 
 GitHub Actions workflow `.github/workflows/azure-static-web-app.yml` expects secret:
