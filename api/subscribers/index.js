@@ -47,15 +47,43 @@ module.exports = async function (context, req){
   // Admin activation of a pending subscriber (POST action=activate)
   if(req.method === 'POST'){
     const action = (req.query.action||'').toLowerCase();
-    const hash = (req.query.hash||'').toLowerCase();
     if(action === 'activate'){
-      if(status !== 'pending') return context.res = { status:400, body:{ error:'Activate only valid when status=pending' } };
-      if(!hash) return context.res = { status:400, body:{ error:'Missing hash' } };
-      let pending = null; try { pending = await table.getEntity('pending', hash); } catch {}
-      if(!pending) {
-        // maybe already active
-        try { await table.getEntity('active', hash); return context.res = { status:200, body:{ ok:true, status:'already-active' } }; } catch {}
-        return context.res = { status:404, body:{ error:'Not found' } };
+      // Accept status=pending OR status=any (or ignore)
+      let hash = (req.query.hash||'').toLowerCase();
+      const emailParam = (req.query.email||'').trim().toLowerCase();
+      if(!hash && emailParam){
+        hash = crypto.createHash('sha256').update(emailParam,'utf8').digest('hex');
+      }
+      if(!hash) return context.res = { status:400, body:{ error:'Missing hash or email' } };
+      // Attempt to locate across partitions
+      let pending=null, active=null, unsub=null, tokenRow=null;
+      try { pending = await table.getEntity('pending', hash); } catch {}
+      try { active = await table.getEntity('active', hash); } catch {}
+      try { unsub = await table.getEntity('unsub', hash); } catch {}
+      // Detect token index orphan
+      if(!pending && !active && !unsub){
+        // try to find a token row referencing this hash (scan tokens)
+        try {
+          for await (const t of table.listEntities({ queryOptions:{ filter:"PartitionKey eq 'token'" }})){
+            if(t.hash === hash){ tokenRow = t; break; }
+          }
+        } catch {}
+      }
+      if(active){
+        return context.res = { status:200, body:{ ok:true, status:'already-active' } };
+      }
+      if(unsub){
+        return context.res = { status:409, body:{ error:'unsubscribed', status:'unsub' } };
+      }
+      if(!pending){
+        const force = (req.query.force||'').toLowerCase()==='true';
+        if(force && tokenRow && tokenRow.hash){
+          // Minimal recreation using tokenRow (no createdUtc known -> now)
+            const now = new Date().toISOString();
+            await table.upsertEntity({ partitionKey:'active', rowKey:hash, email: tokenRow.email||emailParam||'unknown', createdUtc: now, confirmedUtc: now });
+            return context.res = { status:200, body:{ ok:true, status:'activated', recreated:true } };
+        }
+        return context.res = { status:404, body:{ error:'not-found', hash, diagnostics:{ tokenIndex: !!tokenRow } } };
       }
       const confirmedUtc = new Date().toISOString();
       await table.upsertEntity({ partitionKey:'active', rowKey:hash, email: pending.email, createdUtc: pending.createdUtc, confirmedUtc });
