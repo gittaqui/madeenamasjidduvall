@@ -1,0 +1,18 @@
+# Exclusions to reduce number of uploaded static files
+# Syntax similar to .gitignore
+
+node_modules/
+api/node_modules/
+api/scripts/
+archive/
+_archive/
+tools/
+scss/
+**/*.ps1
+**/*.zip
+__azurite_db_* 
+__blobstorage__/
+__queuestorage__/
+
+# Keep images actually used; if there are duplicates in /image/ exclude that folder
+image/
