@@ -59,18 +59,18 @@ Deploys:
 - Functions (`api/`)
 - Storage env vars provided by portal/app settings
 
-## No-Op Build Script (Oryx)
+## Dependency Layout Simplified
 
-Azure Static Web Apps' Oryx build system detected a Node project because `server.js` sits at the repo root, then failed because there was no `build` (or `build:azure`) script. A minimal root `package.json` with a no-op build script was added:
+The static front-end now has no root `package.json`; all Node dependencies live only inside `api/` (Azure Functions). This avoids duplicate `node_modules` and keeps SWA static upload lean.
 
-```json
-{
-  "scripts": {
-    "build": "echo Static site - no build needed"
-  }
-}
+Local commands examples:
+
+```bash
+# Install a new dependency for functions
+npm install --prefix api @azure/data-tables
+
+# Start functions locally
+(cd api && func start)
 ```
 
-This keeps deployments green while still serving the site as pure static assets plus Functions. If you later introduce an actual asset pipeline (e.g. bundling, SCSS, minification), replace the script with the real build command and adjust `output_location` if needed.
-
-If you prefer to remove Node detection entirely, you could relocate `server.js` into a `local-dev/` folder and update `LOCAL_DEV.md` accordingly (optional).
+If you later add a front-end build pipeline, reintroduce a root `package.json` with actual build steps and update the GitHub Actions workflow (`app_location`, `output_location`).
