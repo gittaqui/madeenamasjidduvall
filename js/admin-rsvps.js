@@ -1,6 +1,7 @@
 // Admin RSVP management UI
 // Fetches /api/rsvps (admin only) and renders table with filters + CSV export link
 (function(){
+  const API_BASE = (window.RSVP_API_BASE || window.API_BASE || '/api').replace(/\/$/,'');
   const eventSel = document.getElementById('eventFilter');
   const statusSel = document.getElementById('statusFilter');
   const limitInput = document.getElementById('limitInput');
@@ -48,7 +49,7 @@
   async function load(){
     const ev = eventSel.value||'';
     const limit = limitInput.value||1000;
-    const url = `/api/rsvps?limit=${encodeURIComponent(limit)}${ev?`&eventId=${encodeURIComponent(ev)}`:''}&_ts=${Date.now()}`;
+  const url = `${API_BASE}/rsvps?limit=${encodeURIComponent(limit)}${ev?`&eventId=${encodeURIComponent(ev)}`:''}&_ts=${Date.now()}`;
     summaryBox.textContent = 'Loading…';
     try{
       const resp = await fetch(url,{credentials:'include'});
@@ -89,7 +90,7 @@
   }
   function updateCsvLink(){
     const ev = eventSel.value||'';
-    const href = `/api/rsvps?format=csv${ev?`&eventId=${encodeURIComponent(ev)}`:''}`;
+  const href = `${API_BASE}/rsvps?format=csv${ev?`&eventId=${encodeURIComponent(ev)}`:''}`;
     csvBtn.href = href;
   }
   refreshBtn.addEventListener('click', load);
