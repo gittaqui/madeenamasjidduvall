@@ -22,8 +22,6 @@
     const dateStr = fmtDate(ev.date);
     const whenStr = weekdayAndTime(ev.date, ev.time);
     const safeImg = ev.image || 'img/events-1.jpg';
-    const safeCtaText = ev.ctaText || 'Details';
-    const safeCtaUrl = ev.ctaUrl || '#';
     return `
       <div class="row g-4 event-item wow fadeIn" data-wow-delay="${delay}s">
         <div class="col-3 col-lg-2 pe-0">
@@ -34,9 +32,8 @@
         </div>
         <div class="col-9 col-lg-6 border-start border-dark pb-5">
           <div class="ms-3">
-            <h4 class="mb-3">${ev.title}</h4>
-            <p class="mb-4">${ev.description || ''}</p>
-            <a href="${safeCtaUrl}" class="btn btn-primary px-3">${safeCtaText}</a>
+            <h4 class="mb-2">${ev.title}</h4>
+            <p class="mb-0">${ev.description || ''}</p>
           </div>
         </div>
         <div class="col-12 col-lg-4">

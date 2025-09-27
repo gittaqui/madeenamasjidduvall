@@ -21,7 +21,10 @@
       info.textContent = `${data.count} ${status} subscriber(s)`;
       for(const row of data.items){
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${row.email||''}</td><td>${status}</td><td>${fmt(row.createdUtc)}</td><td>${fmt(row.confirmedUtc)}</td><td>${fmt(row.unsubUtc)}</td><td><button class="btn btn-sm btn-outline-danger" data-hash="${row.hash}">Delete</button></td>`;
+        const actions = [];
+        if(status === 'pending') actions.push(`<button class="btn btn-sm btn-outline-success me-1" data-activate="${row.hash}">Activate</button>`);
+        actions.push(`<button class="btn btn-sm btn-outline-danger" data-hash="${row.hash}">Delete</button>`);
+        tr.innerHTML = `<td>${row.email||''}</td><td>${status}</td><td>${fmt(row.createdUtc)}</td><td>${fmt(row.confirmedUtc)}</td><td>${fmt(row.unsubUtc)}</td><td>${actions.join('')}</td>`;
         tbody.appendChild(tr);
       }
     } catch(err){
@@ -33,8 +36,8 @@
     if(!confirm('Delete this subscriber?')) return;
     const status = currentStatus();
     try {
-      const res = await fetch(`/api/subscribers?status=${encodeURIComponent(status)}&hash=${encodeURIComponent(hash)}`, { method:'DELETE' });
-      if(!res.ok) throw new Error('Delete failed');
+      const res = await fetch(`/api/subscribers?status=${encodeURIComponent(status)}&hash=${encodeURIComponent(hash)}`, { method:'DELETE', headers:{'Accept':'application/json'} });
+      if(!res.ok){ const t = await res.text(); throw new Error(`Delete failed (${res.status}) ${t}`); }
       await load();
     } catch(err){ alert(err.message); }
   }
@@ -42,8 +45,19 @@
   tbody.addEventListener('click', e=>{
     if(e.target.matches('button[data-hash]')){
       del(e.target.getAttribute('data-hash'));
+    } else if(e.target.matches('button[data-activate]')){
+      activate(e.target.getAttribute('data-activate'));
     }
   });
+
+  async function activate(hash){
+    if(!confirm('Activate this subscriber (treat as confirmed)?')) return;
+    try {
+      const res = await fetch(`/api/subscribers?status=pending&action=activate&hash=${encodeURIComponent(hash)}`, { method:'POST', headers:{'Accept':'application/json'} });
+      if(!res.ok){ const t = await res.text(); throw new Error(`Activate failed (${res.status}) ${t}`); }
+      await load();
+    } catch(err){ alert(err.message); }
+  }
   refreshBtn.addEventListener('click', load);
   statusSel.addEventListener('change', load);
 

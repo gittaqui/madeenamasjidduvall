@@ -23,5 +23,6 @@
   "TO_EMAIL": "taqui@outlook.com",
   "FORCE_TO_EMAIL": "taqui@outlook.com",
   "FORCE_FROM_EMAIL": "Madeena Masjid <noreply@madeenamasjid.com>"
+  ,"SUBSCRIBERS_ADMIN_KEY": "mysupersecretkey123"
   }
 }

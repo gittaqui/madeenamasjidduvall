@@ -25,8 +25,7 @@
     const dateStr = fmtDate(ev.date);
     const whenStr = weekdayAndTime(ev.date, ev.time);
     const img = ev.image || 'img/events-1.jpg';
-    const ctaText = ev.ctaText || 'Details';
-    const ctaUrl = ev.ctaUrl || 'event.html';
+  // CTA removed per request (no More Info / Sign Up button)
     container.innerHTML = `
       <div class="row g-4 event-item wow fadeIn" data-wow-delay="0.1s">
         <div class="col-12 col-lg-8">
@@ -38,9 +37,8 @@
               </div>
             </div>
             <div>
-              <h4 class="mb-2">${ev.title}</h4>
-              <p class="mb-3">${ev.description || ''}</p>
-              <a href="${ctaUrl}" class="btn btn-primary btn-sm">${ctaText}</a>
+              <h4 class="mb-1">${ev.title}</h4>
+              <p class="mb-0">${ev.description || ''}</p>
             </div>
           </div>
         </div>

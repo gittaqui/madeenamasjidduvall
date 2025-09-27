@@ -107,20 +107,63 @@
       });
     } catch { /* ignore */ }
 
-    // Flash banner feature
+    // Flash banner feature with optional rotation
     try {
       const enabled = !!(features && features.flashBanner);
-      const text = (announcements && announcements.flashText) || '';
       const banner = document.getElementById('flash-banner');
       const txt = document.getElementById('flash-text');
-      const closeBtn = document.getElementById('flash-close');
-      if (banner && txt && closeBtn) {
-        if (enabled && text) {
-          txt.textContent = text;
-          banner.classList.remove('d-none');
-        } else {
-          banner.classList.add('d-none');
+      if(!(banner && txt && enabled)) return;
+      // Build messages array (new format) or fallback to single-legacy fields
+      let messages = Array.isArray(announcements?.messages) ? announcements.messages.slice() : [];
+      if(!messages.length){
+        const singleText = (announcements && (announcements.flashText || announcements.text)) || '';
+        if(singleText){
+          messages = [{
+            text: singleText,
+            subText: announcements?.subText || '',
+            linkUrl: announcements?.linkUrl || '',
+            style: announcements?.style || ''
+          }];
         }
+      }
+      // Time window filtering (startUtc/endUtc in ISO)
+      const now = Date.now();
+      messages = messages.filter(m=>{
+        const startOk = !m.startUtc || Date.parse(m.startUtc) <= now;
+        const endOk = !m.endUtc || Date.parse(m.endUtc) >= now;
+        return startOk && endOk && m.text;
+      });
+      if(!messages.length){ banner.classList.add('d-none'); return; }
+      const intervalMs = Math.max(3000, (announcements?.rotateIntervalSeconds || 0) * 1000);
+      let idx = 0;
+      function render(msg, animate){
+        txt.innerHTML = '';
+        const mainSpan = document.createElement('span');
+        mainSpan.textContent = msg.text;
+        txt.appendChild(mainSpan);
+        if(msg.subText){
+          const sub = document.createElement('span');
+          sub.className='ms-3 small fw-normal';
+          sub.textContent = msg.subText; txt.appendChild(sub);
+        }
+        if(msg.linkUrl){
+          const a = document.createElement('a'); a.href=msg.linkUrl; a.textContent='Learn more'; a.className='ms-3 text-light text-decoration-underline'; a.target='_blank'; a.rel='noopener'; txt.appendChild(a);
+        }
+        if(msg.style === 'important') banner.classList.add('flash-important'); else banner.classList.remove('flash-important');
+        if(animate){
+          txt.classList.remove('flash-fade-in');
+          // force reflow
+          void txt.offsetWidth;
+          txt.classList.add('flash-fade-in');
+        }
+        banner.classList.remove('d-none');
+      }
+      render(messages[0], false);
+      if(messages.length > 1 && intervalMs > 0){
+        setInterval(()=>{
+          idx = (idx + 1) % messages.length;
+          render(messages[idx], true);
+        }, intervalMs);
       }
     } catch { /* ignore */ }
   }

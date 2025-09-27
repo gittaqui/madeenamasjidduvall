@@ -111,12 +111,12 @@
         <!-- Hero End -->
 
         <!-- Flash News Banner Start -->
-        <div class="container-fluid flash-banner d-none" id="flash-banner" role="region" aria-live="polite">
+    <div class="container-fluid flash-banner" id="flash-banner" role="region" aria-live="polite">
             <div class="container">
                 <div class="banner-inner">
                     <i class="bi bi-megaphone-fill"></i>
                     <div class="flash-text" id="flash-text">Announcement</div>
-                    <button class="btn btn-sm flash-close" id="flash-close" aria-label="Dismiss announcement">Hide</button>
+                    <!-- Close button removed -->
                 </div>
             </div>
         </div>
@@ -128,6 +128,43 @@
                         <div class="container py-5">
                                 <h1 class="display-3 mb-5 wow fadeIn" data-wow-delay="0.1s">Upcoming <span class="text-primary">Events</span></h1>
                                 <div id="events-list" aria-live="polite"></div>
+                                <div class="mt-5" id="rsvp-block">
+                                    <h2 class="h3 mb-3">RSVP</h2>
+                                    <form id="rsvp-form" class="row g-3" novalidate>
+                                        <div class="col-md-4">
+                                            <label for="rsvp-event" class="form-label">Event *</label>
+                                            <select id="rsvp-event" name="eventId" class="form-select" required aria-required="true"></select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="rsvp-name" class="form-label">Name</label>
+                                            <input type="text" id="rsvp-name" name="name" class="form-control" maxlength="80" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="rsvp-email" class="form-label">Email *</label>
+                                            <input type="email" id="rsvp-email" name="email" class="form-control" required autocomplete="email" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="rsvp-adults" class="form-label">Adults</label>
+                                            <input type="number" id="rsvp-adults" name="adults" class="form-control" min="0" value="1" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="rsvp-children" class="form-label">Children</label>
+                                            <input type="number" id="rsvp-children" name="children" class="form-control" min="0" value="0" />
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="rsvp-notes" class="form-label">Notes (optional)</label>
+                                            <textarea id="rsvp-notes" name="notes" rows="2" class="form-control" maxlength="300"></textarea>
+                                        </div>
+                                        <div class="col-12 d-none">
+                                            <input type="text" name="website" tabindex="-1" autocomplete="off" aria-label="Leave this field empty" />
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="submit" class="btn btn-primary" id="rsvp-submit">Submit RSVP</button>
+                                            <span class="ms-3 small" id="rsvp-msg" aria-live="polite"></span>
+                                        </div>
+                                    </form>
+                                    <div class="mt-4 small" id="rsvp-stats"></div>
+                                </div>
                                 <noscript>
                                     <p class="text-dark">Please enable JavaScript to view upcoming events.</p>
                                 </noscript>
@@ -247,6 +284,64 @@
         <script src="js/config.js"></script>
         <script src="js/auth.js"></script>
     <script src="js/events.js"></script>
+    <script>
+        (function(){
+            const form = document.getElementById('rsvp-form');
+            const eventSelect = document.getElementById('rsvp-event');
+            const msgEl = document.getElementById('rsvp-msg');
+            const statsEl = document.getElementById('rsvp-stats');
+            let currentEventId = null;
+            // Populate event dropdown
+            document.addEventListener('DOMContentLoaded', ()=>{
+                setTimeout(()=>{
+                    fetch('events.json',{cache:'no-store'}).then(r=>r.json()).then(all=>{
+                        const today = new Date(); today.setHours(0,0,0,0);
+                        const upcoming = (all||[]).filter(e=> e.published !== false).filter(e=>{ const d = new Date(e.date+'T00:00:00'); return !isNaN(d) && d >= today; }).sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+                        if(upcoming.length){
+                            eventSelect.innerHTML = upcoming.map(ev=>`<option value="${ev.id}">${ev.title} (${ev.date})</option>`).join('');
+                            currentEventId = upcoming[0].id;
+                            refreshStats();
+                        } else {
+                            eventSelect.innerHTML = '<option value="">No upcoming events</option>';
+                        }
+                    }).catch(()=>{});
+                }, 300); // allow events.js to finish
+            });
+            if(eventSelect){
+                eventSelect.addEventListener('change', ()=>{ currentEventId = eventSelect.value; refreshStats(); });
+            }
+            function refreshStats(){
+                if(!currentEventId) return;
+                fetch(`api/rsvp/stats?eventId=${encodeURIComponent(currentEventId)}`).then(r=>r.json()).then(d=>{
+                    if(!d.ok) return;
+                    statsEl.textContent = `Confirmed: ${d.confirmed} (Adults: ${d.adults}, Children: ${d.children}) | Pending: ${d.pending}`;
+                }).catch(()=>{});
+            }
+            if(form){
+                form.addEventListener('submit', async (e)=>{
+                    e.preventDefault();
+                    if(!currentEventId){ msgEl.textContent = 'Event not ready yet.'; return; }
+                    msgEl.textContent = 'Submitting...';
+                    const payload = {
+                        eventId: currentEventId || eventSelect.value,
+                        name: form.name.value,
+                        email: form.email.value,
+                        adults: Number(form.adults.value||1),
+                        children: Number(form.children.value||0),
+                        notes: form.notes.value,
+                        website: form.website.value
+                    };
+                    try {
+                        const resp = await fetch('api/rsvp',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                        const data = await resp.json();
+                        if(!resp.ok || !data.ok){ msgEl.textContent = data.error || 'Error'; return; }
+                        if(data.needConfirm && data.status==='pending') msgEl.textContent = 'Check your email to confirm.'; else msgEl.textContent = 'RSVP recorded.';
+                        refreshStats();
+                    } catch(err){ msgEl.textContent = 'Network error'; }
+                });
+            }
+        })();
+    </script>
     <script src="js/schedule.js"></script>
     </body>
 

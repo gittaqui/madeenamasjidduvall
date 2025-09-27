@@ -5,9 +5,7 @@
     "date": "2025-10-03",
     "time": "19:30",
     "description": "Weekly family-friendly halaqa after Maghrib. All are welcome.",
-    "image": "img/events-1.jpg",
-    "ctaText": "More Info",
-    "ctaUrl": "#",
+  "image": "img/events-1.jpg",
     "published": true
   },
   {
@@ -16,9 +14,7 @@
     "date": "2025-10-19",
     "time": "09:00",
     "description": "Join volunteers to help clean and beautify our neighborhood. Bring gloves if you have them.",
-    "image": "img/events-2.jpg",
-    "ctaText": "Sign Up",
-    "ctaUrl": "#",
+  "image": "img/events-2.jpg",
     "published": true
   },
   {
@@ -27,9 +23,7 @@
     "date": "2025-06-07",
     "time": "08:30",
     "description": "Eid salah followed by light refreshments. Please arrive 15 minutes early.",
-    "image": "img/events-3.jpg",
-    "ctaText": "Details",
-    "ctaUrl": "#",
+  "image": "img/events-3.jpg",
     "published": false
   }
 ]
