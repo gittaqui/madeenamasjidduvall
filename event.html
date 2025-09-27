@@ -283,6 +283,10 @@
         <script src="js/main.js"></script>
         <script src="js/config.js"></script>
         <script src="js/auth.js"></script>
+        <!-- External RSVP/Subscribe API base (fallback to internal /api if not deployed) -->
+        <script>
+            window.RSVP_API_BASE = window.RSVP_API_BASE || 'https://madeena-rsvp-api.azurewebsites.net/api';
+        </script>
     <script src="js/events.js"></script>
     <script>
         (function(){
@@ -291,6 +295,7 @@
             const msgEl = document.getElementById('rsvp-msg');
             const statsEl = document.getElementById('rsvp-stats');
             let currentEventId = null;
+            const API_BASE = (window.RSVP_API_BASE || '/api').replace(/\/$/,'');
             // Populate event dropdown
             document.addEventListener('DOMContentLoaded', ()=>{
                 setTimeout(()=>{
@@ -332,7 +337,7 @@
                         website: form.website.value
                     };
                     try {
-                        const resp = await fetch('api/rsvp',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                        const resp = await fetch(API_BASE + '/rsvp',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
                         const data = await resp.json();
                         if(!resp.ok || !data.ok){ msgEl.textContent = data.error || 'Error'; return; }
                         if(data.needConfirm && data.status==='pending') msgEl.textContent = 'Check your email to confirm.'; else msgEl.textContent = 'RSVP recorded.';

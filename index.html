@@ -329,6 +329,10 @@
                         });
                     }
                 </script>
+                                        <!-- External RSVP/Subscribe API base (fallback to internal /api if not deployed) -->
+                                        <script>
+                                            window.RSVP_API_BASE = window.RSVP_API_BASE || 'https://madeena-rsvp-api.azurewebsites.net/api';
+                                        </script>
                                 <script src="js/subscribe.js"></script>
     </body>
 
