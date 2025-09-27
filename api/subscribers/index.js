@@ -44,6 +44,19 @@ module.exports = async function (context, req){
     }
     return context.res = { status:404, body:{ ok:false, error:'not-found-any-partition' } };
   }
+  // tokeninfo: given a hash, search token index for any token rows referencing it (slow scan but edge case)
+  if(req.method === 'GET' && (req.query.action||'').toLowerCase()==='tokeninfo'){
+    const hash = (req.query.hash||'').toLowerCase();
+    if(!hash) return context.res = { status:400, body:{ error:'Missing hash' } };
+    const matches = [];
+    try {
+      for await (const t of table.listEntities({ queryOptions:{ filter:"PartitionKey eq 'token'" }})){
+        if(t.hash === hash) matches.push({ token: t.rowKey, createdUtc: t.createdUtc, email: t.email });
+      }
+    } catch(e){ context.log('[subscribers] tokeninfo scan error', e.message); }
+    if(!matches.length) return context.res = { status:404, body:{ error:'no-token-index', hash } };
+    return context.res = { status:200, body:{ ok:true, hash, tokens: matches } };
+  }
   // Admin activation of a pending subscriber (POST action=activate)
   if(req.method === 'POST'){
     const action = (req.query.action||'').toLowerCase();
@@ -77,11 +90,20 @@ module.exports = async function (context, req){
       }
       if(!pending){
         const force = (req.query.force||'').toLowerCase()==='true';
-        if(force && tokenRow && tokenRow.hash){
-          // Minimal recreation using tokenRow (no createdUtc known -> now)
+        if(force){
+          // If no tokenRow yet, attempt to locate one now (in case earlier scan missed it)
+          if(!tokenRow){
+            try {
+              for await (const t of table.listEntities({ queryOptions:{ filter:"PartitionKey eq 'token'" }})){
+                if(t.hash === hash){ tokenRow = t; break; }
+              }
+            } catch {}
+          }
+          if(tokenRow){
             const now = new Date().toISOString();
-            await table.upsertEntity({ partitionKey:'active', rowKey:hash, email: tokenRow.email||emailParam||'unknown', createdUtc: now, confirmedUtc: now });
-            return context.res = { status:200, body:{ ok:true, status:'activated', recreated:true } };
+            await table.upsertEntity({ partitionKey:'active', rowKey:hash, email: tokenRow.email || emailParam || 'unknown', createdUtc: tokenRow.createdUtc || now, confirmedUtc: now, recreatedFromToken:true });
+            return context.res = { status:200, body:{ ok:true, status:'activated', recreated:true, source:'tokenIndex' } };
+          }
         }
         return context.res = { status:404, body:{ error:'not-found', hash, diagnostics:{ tokenIndex: !!tokenRow } } };
       }

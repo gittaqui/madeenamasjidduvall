@@ -39,13 +39,13 @@ module.exports = async function (context, req){
     if(!pendingEntity){
       token = randomToken();
       const createdUtc = new Date().toISOString();
-      await table.upsertEntity({ partitionKey:'pending', rowKey:hash, email: emailRaw, token, createdUtc });
-      // token index row for O(1) confirmation lookup
-      await table.upsertEntity({ partitionKey:'token', rowKey:token, hash, createdUtc });
+  await table.upsertEntity({ partitionKey:'pending', rowKey:hash, email: emailRaw, token, createdUtc });
+  // token index row for O(1) confirmation lookup (store email for recovery scenarios)
+  await table.upsertEntity({ partitionKey:'token', rowKey:token, hash, email: emailRaw, createdUtc });
     } else {
       // ensure token index exists if upgrading from previous version
       try { await table.getEntity('token', pendingEntity.token); } catch {
-        await table.upsertEntity({ partitionKey:'token', rowKey:pendingEntity.token, hash, createdUtc: pendingEntity.createdUtc || new Date().toISOString() });
+        await table.upsertEntity({ partitionKey:'token', rowKey:pendingEntity.token, hash, email: pendingEntity.email, createdUtc: pendingEntity.createdUtc || new Date().toISOString() });
       }
     }
     const site = process.env.SITE_ORIGIN || (req.headers['x-forwarded-host'] ? `https://${req.headers['x-forwarded-host']}` : '');
