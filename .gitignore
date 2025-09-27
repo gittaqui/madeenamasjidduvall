@@ -1,3 +1,33 @@
+# Node / package artifacts
+node_modules/
+api/node_modules/
+npm-debug.log*
+package-lock.json
+
+# Azure Static Web Apps local emulator & Azurite artifacts
+__azurite_db_*/
+__blobstorage__/ 
+__queuestorage__/
+
+# Archives / legacy content (already excluded from deploy via .swaignore)
+archive/
+_archive/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+
+# Local environment overrides
+local.settings.*.json
+!local.settings.json
+
+# Logs
+logs/
+*.log
+
+# Zips / packaged output
+*.zip
 Extract contact form logic into a separate JavaScript file; enhance validation and user feedback for improved usability.
 # Dependencies
 node_modules/
