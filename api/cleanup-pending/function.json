@@ -1,5 +1,13 @@
 {
   "bindings": [
-    { "schedule": "0 0 * * * *", "name": "timer", "type": "timerTrigger", "direction": "in" }
+    {
+      "authLevel": "anonymous",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": ["get","post"],
+      "route": "cleanup-pending"
+    },
+    { "type": "http", "direction": "out", "name": "res" }
   ]
 }
