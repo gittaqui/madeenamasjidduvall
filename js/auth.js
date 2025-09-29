@@ -34,7 +34,7 @@
     b.innerHTML = `
       <div class="d-flex flex-wrap align-items-center gap-2">
         <span class="small text-secondary">Hi, ${escapeHtml(name)}${isAdmin ? ' <span class=\"badge bg-primary\">admin</span>' : ''}</span>
-  ${isAdmin ? '<a class="btn btn-sm btn-outline-success" href="/admin-schedule.html" title="Admin schedule editor">Schedule</a>' : ''}
+  ${isAdmin ? '<a class="btn btn-sm btn-outline-success" href="/admin-subscribers.html" title="Subscriber management">Subscribers</a>' : ''}
   ${isAdmin ? '<a class="btn btn-sm btn-outline-success" href="/admin-rsvps.html" title="RSVP management">RSVPs</a>' : ''}
         <a class="btn btn-sm btn-outline-secondary" href="${logoutUrl()}" title="Sign out">Sign out</a>
       </div>`;
