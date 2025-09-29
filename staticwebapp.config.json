@@ -17,6 +17,7 @@
   { "route": "/api/diag-events-table", "methods": ["GET"], "allowedRoles": ["admin"] },
   { "route": "/api/diag-table-selftest", "methods": ["GET"], "allowedRoles": ["admin"] },
   { "route": "/api/diag-mi-storage", "methods": ["GET"], "allowedRoles": ["admin"] },
+  { "route": "/api/diag-env-storage", "methods": ["GET"], "allowedRoles": ["admin"] },
     { "route": "/api/prayer-times", "methods": ["GET"], "allowedRoles": ["anonymous"] },
     { "route": "/api/prayer-times", "methods": ["POST"], "allowedRoles": ["admin"] },
     { "route": "/api/prayer-times", "methods": ["OPTIONS"], "allowedRoles": ["anonymous"] },
