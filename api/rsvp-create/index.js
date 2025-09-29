@@ -18,15 +18,32 @@ module.exports = async function(context, req){
   let events = await loadEvents(req);
   let exists = events.some(e=> e.id === eventId);
   let syntheticCreated = false;
+  // Basic rate limiting for synthetic event creation (per IP per day)
+  const ipRaw = (req.headers['x-forwarded-for']||'').split(',')[0].trim() || (req.headers['client-ip']||'').trim() || 'unknown';
+  const ipHash = crypto.createHash('sha256').update(ipRaw,'utf8').digest('hex');
+  const today = new Date().toISOString().substring(0,10);
+  const rateLimit = Number(process.env.RSVP_SYNTH_EVENT_LIMIT||'10');
   if(!exists){
-    // Synthesize event metadata inserted into a lightweight index partition so admins can see it.
     try {
+      // Load or create rate entity
+      let rateEnt = null;
+      try { rateEnt = await table.getEntity('rate', ipHash + '_' + today); } catch {}
+      if(!rateEnt){
+        rateEnt = { partitionKey:'rate', rowKey: ipHash + '_' + today, count:0, firstUtc: new Date().toISOString() };
+      }
+      if(Number(rateEnt.count||0) >= rateLimit){
+        return context.res = { status:429, body:{ ok:false, error:'rate_limited', detail:'Synthetic event creation limit reached for today' } };
+      }
+      // Synthesize event metadata inserted into a lightweight index partition so admins can see it.
       const dateMatch = eventId.match(/(\d{4}-\d{2}-\d{2})/);
       const date = dateMatch ? dateMatch[1] : new Date().toISOString().substring(0,10);
       const prettyTitle = eventId.replace(/\d{4}-\d{2}-\d{2}/,'').replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()).trim() || eventId;
       const metaRow = { partitionKey:'event-meta', rowKey:eventId, title: prettyTitle, date, createdUtc: new Date().toISOString(), synthetic:true };
       await table.upsertEntity(metaRow, 'Merge');
       syntheticCreated = true;
+      rateEnt.count = Number(rateEnt.count||0) + 1;
+      rateEnt.lastSyntheticUtc = new Date().toISOString();
+      await table.upsertEntity(rateEnt, 'Replace');
     } catch(e){ context.log('[rsvp-create] synthetic meta failed', e.message); }
   }
   const now = new Date().toISOString();

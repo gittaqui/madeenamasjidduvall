@@ -340,8 +340,17 @@
                         website: form.website.value
                     };
                     try {
-                        const resp = await fetch(API_BASE + '/rsvp',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-                        const data = await resp.json();
+                        let resp = await fetch(API_BASE + '/rsvp',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                        let data; try { data = await resp.json(); } catch{ data = {}; }
+                        if(resp.status === 404 || data.error === 'invalid_event' || data.error === 'event_not_found'){
+                            // Fallback to internal create-or-add (auto-synthesizes event)
+                            const fb = await fetch('/api/rsvp/create-or-add',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                            let fbData = {}; try { fbData = await fb.json(); } catch{}
+                            if(!fb.ok || !fbData.ok){ msgEl.textContent = fbData.error || 'Error'; return; }
+                            msgEl.textContent = fbData.syntheticEvent ? 'RSVP recorded (event created).' : 'RSVP recorded.';
+                            refreshStats();
+                            return;
+                        }
                         if(!resp.ok || !data.ok){ msgEl.textContent = data.error || 'Error'; return; }
                         if(data.needConfirm && data.status==='pending') msgEl.textContent = 'Check your email to confirm.'; else msgEl.textContent = 'RSVP recorded.';
                         refreshStats();

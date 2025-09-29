@@ -86,7 +86,9 @@
       events.forEach(ev=>{
         const opt = document.createElement('option');
         opt.value = ev.id || ev.eventId || ev.slug || ev.title; // fallback heuristics
-        opt.textContent = `${ev.id || ev.eventId || ev.slug || '?'} – ${ev.title||ev.name||''}`;
+        const synth = ev.synthetic ? ' (synthetic)' : '';
+        opt.textContent = `${ev.id || ev.eventId || ev.slug || '?'} – ${ev.title||ev.name||''}${synth}`;
+        if(ev.synthetic){ opt.dataset.synthetic = 'true'; }
         eventSel.appendChild(opt);
       });
     }

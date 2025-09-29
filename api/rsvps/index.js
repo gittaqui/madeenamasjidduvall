@@ -45,6 +45,7 @@ module.exports = async function (context, req){
   const filter = eventId ? `PartitionKey eq '${eventId}'` : undefined;
   try {
     for await (const ent of table.listEntities({ queryOptions: filter? { filter } : undefined })){
+      if(ent.partitionKey === 'event-meta' || ent.partitionKey === 'rate') continue; // skip synthetic meta + rate limit rows
       items.push({ eventId: ent.partitionKey, email: ent.rowKey, name: ent.name, adults: ent.adults, children: ent.children, status: ent.status, createdUtc: ent.createdUtc, confirmedUtc: ent.confirmedUtc, canceledUtc: ent.canceledUtc });
       if(items.length >= limit) break;
     }
