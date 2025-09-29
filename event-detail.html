@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Event Detail</title>
+  <link rel="stylesheet" href="/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>.event-hero{background:#f5f5f5;padding:2rem 0;margin-top:4rem}.mono{font-family:ui-monospace,monospace;font-size:.75rem}</style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top border-bottom">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Masjid</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="/event.html">Events</a></li>
+        </ul>
+        <div id="auth-box" class="d-flex"></div>
+      </div>
+    </div>
+  </nav>
+  <section class="event-hero">
+    <div class="container">
+      <h1 id="ev-title" class="h3 mb-1">Event</h1>
+      <p class="text-muted mb-0"><span id="ev-date"></span> <span id="ev-time"></span></p>
+    </div>
+  </section>
+  <main class="container my-4">
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <article>
+          <div id="ev-image-wrapper" class="mb-3 d-none"><img id="ev-image" class="img-fluid rounded" alt="Event image" /></div>
+          <div id="ev-description" class="mb-4"></div>
+          <div class="small text-secondary mb-4" id="ev-meta"></div>
+        </article>
+        <section id="rsvp-section" class="mb-5">
+          <h2 class="h5">RSVP</h2>
+          <form id="rsvpForm" class="row g-2" novalidate>
+            <input type="hidden" id="eventIdHidden" name="eventId" />
+            <div class="col-md-4">
+              <label for="rsvpName" class="form-label">Name</label>
+              <input id="rsvpName" name="name" class="form-control" maxlength="80" />
+            </div>
+            <div class="col-md-4">
+              <label for="rsvpEmail" class="form-label">Email *</label>
+              <input id="rsvpEmail" name="email" type="email" required class="form-control" />
+            </div>
+            <div class="col-md-2">
+              <label for="rsvpAdults" class="form-label">Adults</label>
+              <input id="rsvpAdults" name="adults" type="number" min="0" value="1" class="form-control" />
+            </div>
+            <div class="col-md-2">
+              <label for="rsvpChildren" class="form-label">Children</label>
+              <input id="rsvpChildren" name="children" type="number" min="0" value="0" class="form-control" />
+            </div>
+            <div class="col-12 d-none">
+              <label class="visually-hidden" for="hpWebsite">Leave blank</label>
+              <input id="hpWebsite" type="text" name="website" tabindex="-1" autocomplete="off" />
+            </div>
+            <div class="col-12">
+              <button class="btn btn-primary" id="rsvpSubmit" type="submit">Submit RSVP</button>
+              <span id="rsvpMsg" class="small ms-2" aria-live="polite"></span>
+            </div>
+          </form>
+          <div id="rsvpStats" class="small mt-3"></div>
+        </section>
+      </div>
+      <div class="col-lg-4">
+        <aside class="border rounded p-3 bg-light">
+          <h2 class="h6">Other Upcoming Events</h2>
+          <ul id="otherList" class="small list-unstyled mb-0"></ul>
+        </aside>
+      </div>
+    </div>
+  </main>
+  <script src="/js/auth.js"></script>
+  <script>
+  (function(){
+    const params = new URLSearchParams(location.search);
+    const evId = params.get('id');
+    const API_BASE = (window.RSVP_API_BASE || '/api').replace(/\/$/,'');
+    const titleEl = document.getElementById('ev-title');
+    const dateEl = document.getElementById('ev-date');
+    const timeEl = document.getElementById('ev-time');
+    const descEl = document.getElementById('ev-description');
+    const imgWrap = document.getElementById('ev-image-wrapper');
+    const imgEl = document.getElementById('ev-image');
+    const metaEl = document.getElementById('ev-meta');
+    const otherList = document.getElementById('otherList');
+    const rsvpForm = document.getElementById('rsvpForm');
+    const rsvpMsg = document.getElementById('rsvpMsg');
+    const rsvpStats = document.getElementById('rsvpStats');
+    const hiddenId = document.getElementById('eventIdHidden');
+
+    async function loadEvents(){
+      try{
+        const all = await fetch('/events.json?ts='+Date.now(),{cache:'no-store'}).then(r=>r.json()).catch(()=>[]);
+        const main = all.find(e=> e.id===evId);
+        if(!main){ titleEl.textContent='Event Not Found'; rsvpForm.classList.add('d-none'); return; }
+        // Populate
+        titleEl.textContent=main.title||main.id; dateEl.textContent=main.date||''; timeEl.textContent=main.time||'';
+        if(main.description){ descEl.innerHTML = main.description.replace(/\n/g,'<br>'); }
+        if(main.image){ imgEl.src=main.image; imgWrap.classList.remove('d-none'); }
+        hiddenId.value = main.id;
+        metaEl.textContent='ID: '+main.id;
+        // Other upcoming
+        const today = new Date(); today.setHours(0,0,0,0);
+        const others = all.filter(e=> e.id!==main.id && e.published!==false && new Date(e.date+'T00:00:00')>=today).slice(0,6);
+        otherList.innerHTML = others.map(o=>`<li><a href="/event-detail.html?id=${encodeURIComponent(o.id)}">${o.title} (${o.date})</a></li>`).join('') || '<li class="text-muted">None</li>';
+        refreshStats(main.id);
+      }catch{}
+    }
+
+    async function refreshStats(id){
+      if(!id) return; rsvpStats.textContent='Loading stats...';
+      try{
+        const d = await fetch(`/api/rsvp/stats?eventId=${encodeURIComponent(id)}`).then(r=>r.json());
+        if(!d.ok){ rsvpStats.textContent=''; return; }
+        rsvpStats.textContent=`Confirmed: ${d.confirmed} (Adults ${d.adults}, Children ${d.children}) | Pending: ${d.pending}`;
+      }catch{ rsvpStats.textContent=''; }
+    }
+
+    rsvpForm && rsvpForm.addEventListener('submit', async e=>{
+      e.preventDefault();
+      if(!hiddenId.value){ rsvpMsg.textContent='No event id'; return; }
+      rsvpMsg.textContent='Submitting...';
+      const payload={ eventId:hiddenId.value, name:rsvpForm.name.value, email:rsvpForm.email.value, adults:Number(rsvpForm.adults.value||1), children:Number(rsvpForm.children.value||0), website:rsvpForm.website.value };
+      try{
+        let resp = await fetch(API_BASE + '/rsvp',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        let data={}; try{ data=await resp.json(); }catch{}
+        if(resp.status===404 || data.error==='invalid_event' || data.error==='event_not_found'){
+          const fb = await fetch('/api/rsvp/create-or-add',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          let fbData={}; try{ fbData=await fb.json(); }catch{}
+            if(!fb.ok || !fbData.ok){ rsvpMsg.textContent=fbData.error||'Error'; return; }
+            rsvpMsg.textContent= fbData.syntheticEvent? 'RSVP recorded (event created).' : 'RSVP recorded.';
+            refreshStats(hiddenId.value); return;
+        }
+        if(!resp.ok || !data.ok){ rsvpMsg.textContent=data.error||'Error'; return; }
+        rsvpMsg.textContent='RSVP recorded.'; refreshStats(hiddenId.value);
+      }catch{ rsvpMsg.textContent='Network error'; }
+    });
+
+    loadEvents();
+  })();
+  </script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/main.js"></script>
+</body>
+</html>

@@ -19,11 +19,47 @@
     <p class="small text-muted">CRUD interface backed by dedicated Azure Table (<code>Events</code> or overridden by <code>EVENTS_TABLE_NAME</code>). Provides aggregated RSVP stats (on demand) and allows publishing control.</p>
     <div class="d-flex flex-wrap gap-2 mb-2">
       <button id="refreshBtn" class="btn btn-sm btn-primary">Refresh</button>
-      <button id="newBtn" class="btn btn-sm btn-success">New Event</button>
+      <button id="showFormBtn" class="btn btn-sm btn-success" type="button">New Event</button>
       <div class="form-check form-switch ms-3">
         <input class="form-check-input" type="checkbox" id="statsToggle">
         <label class="form-check-label small" for="statsToggle">Include RSVP Stats</label>
       </div>
+    </div>
+    <div id="formWrapper" class="border rounded p-3 bg-light mb-3 d-none">
+      <h2 class="h6 mb-3" id="formTitle">Create Event</h2>
+      <form id="eventForm" novalidate class="row g-2">
+        <input type="hidden" id="eventId" />
+        <div class="col-md-4">
+          <label for="title" class="form-label">Title *</label>
+          <input type="text" class="form-control" id="title" required maxlength="120" />
+        </div>
+        <div class="col-md-3">
+          <label for="date" class="form-label">Date *</label>
+          <input type="date" class="form-control" id="date" required />
+        </div>
+        <div class="col-md-2">
+          <label for="time" class="form-label">Time</label>
+          <input type="time" class="form-control" id="time" value="00:00" />
+        </div>
+        <div class="col-md-3 form-check mt-4 pt-2">
+          <input class="form-check-input" type="checkbox" id="published" checked />
+          <label class="form-check-label" for="published">Published</label>
+        </div>
+        <div class="col-12">
+          <label for="image" class="form-label">Image URL</label>
+          <input type="text" class="form-control" id="image" maxlength="200" />
+        </div>
+        <div class="col-12">
+          <label for="description" class="form-label">Description</label>
+          <textarea id="description" class="form-control" rows="3" maxlength="1200"></textarea>
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-primary" type="submit" id="saveBtn">Save</button>
+          <button class="btn btn-secondary" type="button" id="resetBtn">Reset</button>
+          <button class="btn btn-outline-secondary ms-auto" type="button" id="cancelEditBtn">Close</button>
+        </div>
+        <div class="col-12"><small id="formStatus" class="text-muted"></small></div>
+      </form>
     </div>
     <div class="table-responsive border bg-white rounded mb-3">
       <table class="table table-sm table-hover align-middle mb-0" id="eventsTable">
@@ -44,7 +80,20 @@
       const tbody=document.querySelector('#eventsTable tbody');
       const statusMsg=document.getElementById('statusMsg');
       const refreshBtn=document.getElementById('refreshBtn');
-      const newBtn=document.getElementById('newBtn');
+  const showFormBtn=document.getElementById('showFormBtn');
+  const formWrapper=document.getElementById('formWrapper');
+  const form=document.getElementById('eventForm');
+  const formTitle=document.getElementById('formTitle');
+  const formStatus=document.getElementById('formStatus');
+  const idInput=document.getElementById('eventId');
+  const titleInput=document.getElementById('title');
+  const dateInput=document.getElementById('date');
+  const timeInput=document.getElementById('time');
+  const pubInput=document.getElementById('published');
+  const descInput=document.getElementById('description');
+  const imgInput=document.getElementById('image');
+  const resetBtn=document.getElementById('resetBtn');
+  const cancelEditBtn=document.getElementById('cancelEditBtn');
       const statsToggle=document.getElementById('statsToggle');
       function esc(s){return (s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
       async function load(){
@@ -66,32 +115,56 @@
           statusMsg.textContent=`${d.count||0} event(s)`;
         }catch(e){ statusMsg.textContent='Error: '+e.message; }
       }
-      async function createOrEdit(existing){
-        const title = prompt('Title', existing? existing.title : '');
-        if(title===null) return;
-        const date = prompt('Date (YYYY-MM-DD)', existing? existing.date : new Date().toISOString().substring(0,10));
-        if(date===null) return;
-        const time = prompt('Time (HH:MM)', existing? existing.time : '00:00');
-        if(time===null) return;
-        const published = confirm('Publish this event?');
-        const payload = existing? { id: existing.id, title, date, time, published } : { title, date, time, published };
-        const method = existing? 'PUT':'POST';
-        try{ const r=await fetch(API,{method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), credentials:'include'}); const d=await r.json(); if(!r.ok){ alert(d.error||'Failed'); } else { if(d.autoGenerated) alert('Created with id '+d.created); load(); } }catch{ alert('Request failed'); }
+      function openCreateForm(){
+        form.reset(); idInput.value=''; formTitle.textContent='Create Event'; formStatus.textContent=''; pubInput.checked=true; dateInput.value=new Date().toISOString().substring(0,10); timeInput.value='00:00';
+        formWrapper.classList.remove('d-none'); titleInput.focus();
       }
+      function openEditForm(existing){
+        idInput.value=existing.id; titleInput.value=existing.title; dateInput.value=existing.date||''; timeInput.value=existing.time||'00:00'; pubInput.checked=existing.published!==false; descInput.value=existing.description||''; imgInput.value=existing.image||'';
+        formTitle.textContent='Edit Event'; formStatus.textContent='Editing '+existing.id; formWrapper.classList.remove('d-none'); titleInput.focus();
+      }
+      async function submitForm(e){
+        e.preventDefault(); formStatus.textContent='Saving...';
+        if(!titleInput.value.trim() || !dateInput.value){ formStatus.textContent='Title and Date required'; return; }
+        const isEdit = !!idInput.value;
+        const payload = {
+          title: titleInput.value.trim(),
+          date: dateInput.value,
+          time: timeInput.value||'00:00',
+          published: pubInput.checked,
+          description: descInput.value.trim(),
+          image: imgInput.value.trim()
+        };
+        if(isEdit) payload.id = idInput.value;
+        const method = isEdit? 'PUT':'POST';
+        try{
+          const r = await fetch(API,{method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), credentials:'include'});
+          const d = await r.json();
+          if(!r.ok){
+            if(d.error==='exists') formStatus.textContent='Conflict: event already exists'; else if(d.error==='events_table_missing') formStatus.textContent='Table missing on server'; else formStatus.textContent='Error: '+(d.error||r.status);
+            return;
+          }
+          formStatus.textContent = isEdit? 'Updated.' : (d.autoGenerated ? 'Created (auto id '+d.created+').' : 'Created.');
+          if(!isEdit){ form.reset(); dateInput.value=new Date().toISOString().substring(0,10); timeInput.value='00:00'; }
+          load();
+        }catch(err){ formStatus.textContent='Network error'; }
+      }
+      form && form.addEventListener('submit', submitForm);
+      resetBtn && resetBtn.addEventListener('click', ()=>{ if(!idInput.value) { form.reset(); dateInput.value=new Date().toISOString().substring(0,10); timeInput.value='00:00'; formStatus.textContent='Form cleared'; } else { openEditForm({ id:idInput.value, title:titleInput.value, date:dateInput.value, time:timeInput.value, published:pubInput.checked, description:descInput.value, image:imgInput.value }); formStatus.textContent='Reset edits'; } });
+      cancelEditBtn && cancelEditBtn.addEventListener('click', ()=>{ formWrapper.classList.add('d-none'); });
       tbody.addEventListener('click', async e=>{
         if(e.target.matches('button[data-edit]')){
           const id=e.target.getAttribute('data-edit');
-          // fetch current to edit
           const row=[...tbody.querySelectorAll('tr')].find(tr=>tr.firstChild && tr.firstChild.textContent===id);
           const existing={ id, title: row.children[1].textContent, date: row.children[2].textContent, time: row.children[3].textContent, published: /yes/.test(row.children[4].textContent) };
-          createOrEdit(existing);
+          openEditForm(existing);
         } else if(e.target.matches('button[data-del]')){
           const id=e.target.getAttribute('data-del');
           if(!confirm('Delete event '+id+'?')) return;
           try{ const r=await fetch(API+'?id='+encodeURIComponent(id),{method:'DELETE', credentials:'include'}); if(!r.ok){ alert('Delete failed'); } else { load(); } }catch{ alert('Delete error'); }
         }
       });
-      newBtn.addEventListener('click', ()=>createOrEdit(null));
+      showFormBtn.addEventListener('click', ()=>openCreateForm());
       refreshBtn.addEventListener('click', load);
       statsToggle.addEventListener('change', load);
       load();
