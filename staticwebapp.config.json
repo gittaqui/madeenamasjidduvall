@@ -8,6 +8,7 @@
   { "route": "/api/rsvps", "methods": ["GET", "DELETE"], "allowedRoles": ["admin"] },
     { "route": "/api/subscribers", "methods": ["GET", "POST", "DELETE"], "allowedRoles": ["admin"] },
   { "route": "/api/synthetic-events", "methods": ["GET", "POST", "DELETE"], "allowedRoles": ["admin"] },
+  { "route": "/api/events", "methods": ["GET", "POST", "PUT", "DELETE"], "allowedRoles": ["admin"] },
   { "route": "/api/cleanup-pending", "methods": ["GET", "POST"], "allowedRoles": ["admin"] },
   { "route": "/api/diag-tables", "methods": ["GET"], "allowedRoles": ["admin"] },
   { "route": "/api/diag-tables-key", "methods": ["GET"], "allowedRoles": ["admin"] },

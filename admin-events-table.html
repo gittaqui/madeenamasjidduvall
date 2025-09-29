@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Events Table Admin</title>
+  <link rel="stylesheet" href="/css/bootstrap.min.css"/>
+  <style>body{padding-top:3.5rem;} .mono{font-family:ui-monospace,monospace;font-size:.75rem;} .table-responsive{max-height:60vh;}</style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Masjid Admin</a>
+      <div class="ms-auto" id="auth-box"></div>
+    </div>
+  </nav>
+  <main class="container py-3">
+    <h1 class="h4 mb-3">Events Table Management</h1>
+    <p class="small text-muted">CRUD interface backed by dedicated Azure Table (<code>Events</code> or overridden by <code>EVENTS_TABLE_NAME</code>). Provides aggregated RSVP stats (on demand) and allows publishing control.</p>
+    <div class="d-flex flex-wrap gap-2 mb-2">
+      <button id="refreshBtn" class="btn btn-sm btn-primary">Refresh</button>
+      <button id="newBtn" class="btn btn-sm btn-success">New Event</button>
+      <div class="form-check form-switch ms-3">
+        <input class="form-check-input" type="checkbox" id="statsToggle">
+        <label class="form-check-label small" for="statsToggle">Include RSVP Stats</label>
+      </div>
+    </div>
+    <div class="table-responsive border bg-white rounded mb-3">
+      <table class="table table-sm table-hover align-middle mb-0" id="eventsTable">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th><th>Title</th><th>Date</th><th>Time</th><th>Published</th><th>Updated</th><th>RSVPs</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="small text-muted" id="statusMsg"></p>
+  </main>
+  <script src="/js/auth.js"></script>
+  <script>
+    (function(){
+      const API = '/api/events';
+      const tbody=document.querySelector('#eventsTable tbody');
+      const statusMsg=document.getElementById('statusMsg');
+      const refreshBtn=document.getElementById('refreshBtn');
+      const newBtn=document.getElementById('newBtn');
+      const statsToggle=document.getElementById('statsToggle');
+      function esc(s){return (s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+      async function load(){
+        statusMsg.textContent='Loading...'; tbody.innerHTML='';
+        try{
+          const url=API+'?'+(statsToggle.checked?'stats=1&':'')+'_ts='+Date.now();
+          const r=await fetch(url,{credentials:'include'});
+          if(r.status===401){statusMsg.textContent='Unauthorized';return;}
+          const d=await r.json();
+          (d.items||[]).forEach(ev=>{
+            const s=ev.stats||{}; const rv=`${s.total||0}/${s.confirmed||0}`;
+            const tr=document.createElement('tr');
+            tr.innerHTML=`<td class="mono">${esc(ev.id)}</td><td>${esc(ev.title)}</td><td>${esc(ev.date||'')}</td><td>${esc(ev.time||'')}</td><td>${ev.published?'<span class="badge bg-success">yes</span>':'<span class="badge bg-secondary">no</span>'}</td><td class="mono small">${esc(ev.updatedUtc||'')}</td><td class="small">${rv}</td><td>
+              <button class="btn btn-sm btn-outline-primary" data-edit="${esc(ev.id)}">Edit</button>
+              <button class="btn btn-sm btn-outline-danger" data-del="${esc(ev.id)}">Delete</button>
+            </td>`;
+            tbody.appendChild(tr);
+          });
+          statusMsg.textContent=`${d.count||0} event(s)`;
+        }catch(e){ statusMsg.textContent='Error: '+e.message; }
+      }
+      async function createOrEdit(existing){
+        const id = existing? existing.id : prompt('Event id (lowercase, hyphens)');
+        if(!id) return;
+        const title = prompt('Title', existing? existing.title : id);
+        if(title===null) return;
+        const date = prompt('Date (YYYY-MM-DD)', existing? existing.date : new Date().toISOString().substring(0,10));
+        if(date===null) return;
+        const time = prompt('Time (HH:MM)', existing? existing.time : '00:00');
+        if(time===null) return;
+        const published = confirm('Publish this event?');
+        const payload={ id, title, date, time, published };
+        const method = existing? 'PUT':'POST';
+        try{ const r=await fetch(API,{method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), credentials:'include'}); const d=await r.json(); if(!r.ok){ alert(d.error||'Failed'); } else { load(); } }catch{ alert('Request failed'); }
+      }
+      tbody.addEventListener('click', async e=>{
+        if(e.target.matches('button[data-edit]')){
+          const id=e.target.getAttribute('data-edit');
+          // fetch current to edit
+          const row=[...tbody.querySelectorAll('tr')].find(tr=>tr.firstChild && tr.firstChild.textContent===id);
+          const existing={ id, title: row.children[1].textContent, date: row.children[2].textContent, time: row.children[3].textContent, published: /yes/.test(row.children[4].textContent) };
+          createOrEdit(existing);
+        } else if(e.target.matches('button[data-del]')){
+          const id=e.target.getAttribute('data-del');
+          if(!confirm('Delete event '+id+'?')) return;
+          try{ const r=await fetch(API+'?id='+encodeURIComponent(id),{method:'DELETE', credentials:'include'}); if(!r.ok){ alert('Delete failed'); } else { load(); } }catch{ alert('Delete error'); }
+        }
+      });
+      newBtn.addEventListener('click', ()=>createOrEdit(null));
+      refreshBtn.addEventListener('click', load);
+      statsToggle.addEventListener('change', load);
+      load();
+    })();
+  </script>
+</body>
+</html>
