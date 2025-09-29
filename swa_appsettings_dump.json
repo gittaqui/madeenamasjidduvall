@@ -1,0 +1,15 @@
+{
+  "id": "/subscriptions/44261691-88d9-4e77-9d7e-5446293eeaed/resourceGroups/rg-madeena-wus2/providers/Microsoft.Web/staticSites/madeenmasjidduvall/config/appsettings",
+  "kind": null,
+  "location": "West US 2",
+  "name": "appsettings",
+  "properties": {
+    "STORAGE_ACCOUNT_BLOB_URL": "https://madeenafnsa821e.blob.core.windows.net",
+    "STORAGE_ACCOUNT_TABLE_URL": "https://madeenafnsa821e.table.core.windows.net",
+    "STORAGE_BLOB": "prayer-times.json",
+    "STORAGE_CONTAINER": "content",
+    "TABLES_SAS": "?se=2025-09-30T22%3A35Z"
+  },
+  "resourceGroup": "rg-madeena-wus2",
+  "type": "Microsoft.Web/staticSites/config"
+}
