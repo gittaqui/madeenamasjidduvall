@@ -14,6 +14,13 @@ function getCredential(){
 // Core builder that accepts an explicit table name (preferred internally)
 function getSpecificTableClient(explicitName){
   let tableName = explicitName || process.env.SUBSCRIBERS_TABLE || 'Subscribers';
+  // Hard guard: if somehow an object sneaks in, serialize keys for visibility
+  if(tableName && typeof tableName === 'object'){
+    try {
+      const summary = Array.isArray(tableName) ? '[array]' : '{'+Object.keys(tableName).join(',')+'}';
+      console.warn('[tableClient] Received non-string tableName object, keys:', summary);
+    } catch{}
+  }
   if(typeof tableName !== 'string'){
     // Defensive: coerce and log
     const coerced = String(tableName);

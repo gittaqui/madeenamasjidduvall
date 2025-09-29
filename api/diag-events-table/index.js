@@ -1,7 +1,7 @@
 const { ensureEventsTableExists } = require('../shared/eventsTable');
 
 module.exports = async function(context, req){
-  const detail = { timeUtc: new Date().toISOString(), env:{ EVENTS_TABLE_NAME: process.env.EVENTS_TABLE_NAME, STORAGE_ACCOUNT_TABLE_URL: process.env.STORAGE_ACCOUNT_TABLE_URL } };
+  const detail = { timeUtc: new Date().toISOString(), env:{ EVENTS_TABLE_NAME: process.env.EVENTS_TABLE_NAME, EVENTS_TABLE_NAME_type: typeof process.env.EVENTS_TABLE_NAME, STORAGE_ACCOUNT_TABLE_URL: process.env.STORAGE_ACCOUNT_TABLE_URL } };
   try {
     const table = await ensureEventsTableExists();
     detail.init = { ok:true };
