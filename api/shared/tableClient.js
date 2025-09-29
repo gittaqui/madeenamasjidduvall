@@ -11,8 +11,9 @@ function getCredential(){
   return new DefaultAzureCredential();
 }
 
-function getTableClient(){
-  let tableName = process.env.SUBSCRIBERS_TABLE || 'Subscribers';
+// Core builder that accepts an explicit table name (preferred internally)
+function getSpecificTableClient(explicitName){
+  let tableName = explicitName || process.env.SUBSCRIBERS_TABLE || 'Subscribers';
   if(typeof tableName !== 'string'){
     // Defensive: coerce and log
     const coerced = String(tableName);
@@ -68,6 +69,11 @@ function getTableClient(){
   }
 }
 
+// Backwards compatible wrapper (legacy callers)
+function getTableClient(){
+  return getSpecificTableClient();
+}
+
 function getLastAuthMode(){ return _lastAuthMode; }
 
-module.exports = { getTableClient, getLastAuthMode };
+module.exports = { getTableClient, getSpecificTableClient, getLastAuthMode };
