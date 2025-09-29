@@ -57,5 +57,35 @@ module.exports = async function (context, req){
     return;
   }
   const events = await loadEvents();
+  // Synthesize minimal event objects for any eventId present in RSVPs but missing from events.json.
+  try {
+    const known = new Set(events.map(e=>e.id));
+    const synthetic = [];
+    for(const row of items){
+      if(!known.has(row.eventId)){
+        known.add(row.eventId);
+        const dateMatch = row.eventId && row.eventId.match(/(\d{4}-\d{2}-\d{2})/);
+        const date = dateMatch ? dateMatch[1] : (row.createdUtc ? row.createdUtc.substring(0,10) : undefined);
+        const prettyTitle = row.eventId
+          .replace(/\d{4}-\d{2}-\d{2}/,'')
+          .replace(/[-_]+/g,' ')
+          .replace(/\b\w/g,c=>c.toUpperCase())
+          .trim() || row.eventId;
+        synthetic.push({
+          id: row.eventId,
+          title: prettyTitle,
+          date,
+          time: undefined,
+          description: '(auto-created from first RSVP)',
+          image: undefined,
+          published: true,
+          synthetic: true
+        });
+      }
+    }
+    if(synthetic.length){
+      events.push(...synthetic);
+    }
+  } catch(e){ context.log('[rsvps] synth events failed', e.message); }
   context.res = { status:200, body:{ ok:true, count: items.length, items, events: events.filter(e=>e.published!==false) } };
 };
