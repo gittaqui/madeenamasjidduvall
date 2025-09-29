@@ -29,6 +29,16 @@ function getSpecificTableClient(explicitName){
   }
 
   function build(){
+    // Optional: allow providing a base64-encoded SAS to avoid shell escaping issues with '&'
+    if(process.env.TABLES_SAS_B64 && !process.env.TABLES_SAS){
+      try {
+        const decoded = Buffer.from(process.env.TABLES_SAS_B64, 'base64').toString('utf8');
+        // Should start with ? (if not, add it)
+        process.env.TABLES_SAS = decoded.startsWith('?') ? decoded : ('?'+decoded);
+      } catch(e){
+        console.warn('[tableClient] Failed to decode TABLES_SAS_B64:', e.message);
+      }
+    }
     // 1. Full connection string (local dev or legacy secret-based) – least preferred in production
     if(process.env.STORAGE_CONNECTION_STRING){
       _lastAuthMode = 'connection_string';
