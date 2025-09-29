@@ -1,24 +1,43 @@
-const { TableClient } = require('@azure/data-tables');
-const { getTableClient } = require('./tableClient');
+const { TableClient, TableServiceClient } = require('@azure/data-tables');
+const { getSpecificTableClient } = require('./tableClient');
 
 function getEventsTable(){
-  // Allow override via EVENTS_TABLE_NAME else default 'Events'
   const name = process.env.EVENTS_TABLE_NAME || 'Events';
-  // Reuse generic client creation without mutating SUBSCRIBERS_TABLE env
   if(process.env.STORAGE_CONNECTION_STRING){
     return TableClient.fromConnectionString(process.env.STORAGE_CONNECTION_STRING, name);
   }
-  // Derive account URL similar to tableClient logic
-  const accountUrl = process.env.STORAGE_ACCOUNT_TABLE_URL
-    || process.env.STORAGE_ACCOUNT_BLOB_URL?.replace(/blob\./,'table.')
-    || process.env.TABLES_ACCOUNT_URL;
-  if(accountUrl){
-    // Use same credentials path as subscribers table by temporarily creating through getTableClient with env change
-    const orig = process.env.SUBSCRIBERS_TABLE;
-    process.env.SUBSCRIBERS_TABLE = name;
-    try { return getTableClient(); } finally { process.env.SUBSCRIBERS_TABLE = orig; }
-  }
-  throw new Error('Missing storage account configuration for Events table');
+  return getSpecificTableClient(name);
 }
 
-module.exports = { getEventsTable };
+async function ensureEventsTableExists(){
+  const name = process.env.EVENTS_TABLE_NAME || 'Events';
+  // Try a quick list to see if we get a 404
+  const client = getEventsTable();
+  try {
+    const iter = client.listEntities({ queryOptions:{ top:1 } });
+    await iter.next();
+    return client; // exists
+  } catch(e){
+    if((e.statusCode === 404 || e.code === 'TableNotFound') && !process.env.DISABLE_AUTO_CREATE_EVENTS_TABLE){
+      // Need service-level client to create table
+      try {
+        if(process.env.STORAGE_CONNECTION_STRING){
+          const svc = TableServiceClient.fromConnectionString(process.env.STORAGE_CONNECTION_STRING);
+          await svc.createTable(name);
+        } else {
+          const accountUrl = (process.env.STORAGE_ACCOUNT_TABLE_URL
+            || process.env.STORAGE_ACCOUNT_BLOB_URL?.replace(/blob\./,'table.')
+            || process.env.TABLES_ACCOUNT_URL);
+          const { DefaultAzureCredential, ManagedIdentityCredential } = require('@azure/identity');
+          const cred = process.env.MANAGED_IDENTITY_CLIENT_ID ? new ManagedIdentityCredential(process.env.MANAGED_IDENTITY_CLIENT_ID) : new DefaultAzureCredential();
+            const svc = new TableServiceClient(accountUrl, cred);
+            await svc.createTable(name);
+        }
+        return getEventsTable();
+      } catch(inner){ throw inner; }
+    }
+    throw e;
+  }
+}
+
+module.exports = { getEventsTable, ensureEventsTableExists };
