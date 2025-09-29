@@ -52,7 +52,7 @@
   const url = `${API_BASE}/rsvps?limit=${encodeURIComponent(limit)}${ev?`&eventId=${encodeURIComponent(ev)}`:''}&_ts=${Date.now()}`;
     summaryBox.textContent = 'Loading…';
     try{
-      const resp = await fetch(url,{credentials:'include'});
+  const resp = await fetch(url,{credentials:'include', cache:'no-store'});
       if(resp.status === 401){
         tbody.innerHTML = '<tr><td colspan="9" class="text-danger">Unauthorized (401) – Your signed-in account lacks the admin role. Assign role "admin" in Static Web App Roles settings and re-login.</td></tr>';
         summaryBox.textContent = '';

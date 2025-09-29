@@ -15,7 +15,7 @@
     tbody.innerHTML='';
     const status = currentStatus();
     try {
-  const res = await fetch(`${API_BASE}/subscribers?status=${encodeURIComponent(status)}`);
+  const res = await fetch(`${API_BASE}/subscribers?status=${encodeURIComponent(status)}`, { credentials:'include', cache:'no-store' });
       if(!res.ok) throw new Error(res.status+' error');
       const data = await res.json();
       if(!data.ok) throw new Error('API error');
@@ -37,7 +37,7 @@
     if(!confirm('Delete this subscriber?')) return;
     // Use status=any to allow deletion after partition changes (e.g., pending -> active)
     try {
-  const res = await fetch(`${API_BASE}/subscribers?status=any&hash=${encodeURIComponent(hash)}`, { method:'DELETE', headers:{'Accept':'application/json'} });
+  const res = await fetch(`${API_BASE}/subscribers?status=any&hash=${encodeURIComponent(hash)}`, { method:'DELETE', headers:{'Accept':'application/json'}, credentials:'include' });
       if(!res.ok){ const t = await res.text(); throw new Error(`Delete failed (${res.status}) ${t}`); }
       await load();
     } catch(err){ alert(err.message); }
@@ -54,7 +54,7 @@
   async function activate(hash){
     if(!confirm('Activate this subscriber (treat as confirmed)?')) return;
     try {
-  const res = await fetch(`${API_BASE}/subscribers?status=pending&action=activate&hash=${encodeURIComponent(hash)}`, { method:'POST', headers:{'Accept':'application/json'} });
+  const res = await fetch(`${API_BASE}/subscribers?status=pending&action=activate&hash=${encodeURIComponent(hash)}`, { method:'POST', headers:{'Accept':'application/json'}, credentials:'include' });
       if(!res.ok){ const t = await res.text(); throw new Error(`Activate failed (${res.status}) ${t}`); }
       await load();
     } catch(err){ alert(err.message); }
@@ -73,7 +73,7 @@
   // purge button triggers cleanup function by hitting it via admin (could create an explicit API if needed)
   purgeBtn.addEventListener('click', async ()=>{
     if(!confirm('Trigger cleanup job now? Old pending (24h+) removed.')) return;
-  try { await fetch(`${API_BASE}/cleanup-pending`); alert('Requested. Check logs.'); } catch(e){ alert('Failed'); }
+  try { await fetch(`${API_BASE}/cleanup-pending`, { credentials:'include' }); alert('Requested. Check logs.'); } catch(e){ alert('Failed'); }
   });
 
   load();
