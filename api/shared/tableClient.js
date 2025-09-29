@@ -2,6 +2,7 @@
 // Enhanced to log which authentication path is used (connection string, SAS, or Managed Identity/default credentials)
 const { DefaultAzureCredential, ManagedIdentityCredential } = require('@azure/identity');
 const { TableClient } = require('@azure/data-tables');
+const { AzureSASCredential } = require('@azure/core-auth');
 
 let _lastAuthMode = null; // cached for diagnostics endpoint usage
 
@@ -53,8 +54,10 @@ function getSpecificTableClient(explicitName){
     }
     if(process.env.TABLES_SAS){
       _lastAuthMode = 'sas';
-      const fullUrl = `${accountUrl}/${tableName}${process.env.TABLES_SAS.startsWith('?')?process.env.TABLES_SAS:'?'+process.env.TABLES_SAS}`;
-      return TableClient.fromTableUrl(fullUrl);
+      // Strip leading '?' for AzureSASCredential
+      const raw = process.env.TABLES_SAS.startsWith('?') ? process.env.TABLES_SAS.slice(1) : process.env.TABLES_SAS;
+      const credential = new AzureSASCredential(raw);
+      return new TableClient(accountUrl.replace(/\/$/, ''), tableName, credential);
     }
     // 3. Managed Identity / DefaultAzureCredential (preferred secure path)
     _lastAuthMode = process.env.MANAGED_IDENTITY_CLIENT_ID ? 'managed_identity' : 'default_credential_chain';
