@@ -319,7 +319,8 @@
             function refreshStats(){
                 if(!currentEventId) return;
                 // Updated stats endpoint path
-                fetch(`/api/rsvp-stats?eventId=${encodeURIComponent(currentEventId)}`).then(r=>r.json()).then(d=>{
+                // Function route is defined as "rsvp/stats" (see api/rsvp-stats/function.json), so the endpoint is /api/rsvp/stats
+                fetch(`/api/rsvp/stats?eventId=${encodeURIComponent(currentEventId)}`).then(r=>r.json()).then(d=>{
                     if(!d.ok) return;
                     statsEl.textContent = `Confirmed: ${d.confirmed} (Adults: ${d.adults}, Children: ${d.children}) | Pending: ${d.pending}`;
                 }).catch(()=>{});
