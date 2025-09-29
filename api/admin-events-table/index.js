@@ -18,7 +18,10 @@ function validateId(id){ return /^[a-z0-9][a-z0-9\-]{2,120}$/.test(id); }
 module.exports = async function(context, req){
   if(!isAdmin(req)) return context.res = { status:401, body:{ error:'Unauthorized' } };
   let eventsTable, rsvpTable;
-  try { eventsTable = await ensureEventsTableExists(); } catch(e){ return context.res = { status:500, body:{ error:'events_table_init_failed', detail:e.message } }; }
+  try { eventsTable = await ensureEventsTableExists(); } catch(e){
+    context.log('[events-admin] init failed', e.code, e.statusCode, e.message);
+    return context.res = { status:500, body:{ error:'events_table_init_failed', detail:e.message, code: e.code, statusCode: e.statusCode } };
+  }
   try { rsvpTable = getRsvpTable(); } catch(e){ rsvpTable = null; }
   const method = req.method;
   if(method === 'GET'){

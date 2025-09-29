@@ -18,7 +18,8 @@ async function ensureEventsTableExists(){
     await iter.next();
     return client; // exists
   } catch(e){
-    if((e.statusCode === 404 || e.code === 'TableNotFound') && !process.env.DISABLE_AUTO_CREATE_EVENTS_TABLE){
+    const notFound = (e.statusCode === 404 || e.code === 'TableNotFound' || e.code === 'ResourceNotFound');
+    if(notFound && !process.env.DISABLE_AUTO_CREATE_EVENTS_TABLE){
       // Need service-level client to create table
       try {
         if(process.env.STORAGE_CONNECTION_STRING){
@@ -35,6 +36,15 @@ async function ensureEventsTableExists(){
         }
         return getEventsTable();
       } catch(inner){ throw inner; }
+    }
+    // If name had uppercase letters and not found, retry in lower-case (Azure tables are case-insensitive, but rarely casing issues surface in some tools)
+    if(notFound && /[A-Z]/.test(name)){
+      try {
+        const lowerClient = getSpecificTableClient(name.toLowerCase());
+        const iter = lowerClient.listEntities({ queryOptions:{ top:1 } });
+        await iter.next();
+        return lowerClient;
+      } catch {/* ignore and rethrow original */}
     }
     throw e;
   }
