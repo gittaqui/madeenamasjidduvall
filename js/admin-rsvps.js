@@ -1,7 +1,9 @@
 // Admin RSVP management UI
 // Fetches /api/rsvps (admin only) and renders table with filters + CSV export link
 (function(){
-  const API_BASE = (window.RSVP_API_BASE || window.API_BASE || '/api').replace(/\/$/,'');
+  // Admin listing endpoints (rsvps) remain on the Static Web App internal Functions API.
+  // Do NOT use external RSVP_API_BASE here or you'll hit 404 (external app does not expose /rsvps listing).
+  const API_BASE = '/api';
   const eventSel = document.getElementById('eventFilter');
   const statusSel = document.getElementById('statusFilter');
   const limitInput = document.getElementById('limitInput');

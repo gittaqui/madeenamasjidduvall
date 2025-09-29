@@ -1,5 +1,6 @@
 (function(){
-  const API_BASE = (window.RSVP_API_BASE || window.API_BASE || '/api').replace(/\/$/,'');
+  // Admin subscribers management must always hit internal Functions API, not external base.
+  const API_BASE = '/api';
   const statusSel = document.getElementById('filter-status');
   const tbody = document.querySelector('#subs-table tbody');
   const info = document.getElementById('status-info');
