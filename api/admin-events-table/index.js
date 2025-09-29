@@ -55,6 +55,12 @@ module.exports = async function(context, req){
     const id = (body.id||'').trim();
     if(!validateId(id)) return context.res = { status:400, body:{ error:'invalid_id' } };
     const now = new Date().toISOString();
+    // Pre-flight existence check to provide friendlier response (avoids opaque 409)
+    let preExisting = null;
+    try { preExisting = await eventsTable.getEntity('event', id); } catch{}
+    if(preExisting){
+      return context.res = { status:409, body:{ error:'exists', id, existing:{ title: preExisting.title, date: preExisting.date, time: preExisting.time, published: preExisting.published, updatedUtc: preExisting.updatedUtc, createdUtc: preExisting.createdUtc } } };
+    }
     const entity = {
       partitionKey:'event',
       rowKey:id,
@@ -68,7 +74,11 @@ module.exports = async function(context, req){
       updatedUtc: now
     };
     try { await eventsTable.createEntity(entity); return context.res = { status:201, body:{ ok:true, created:id } }; }
-    catch(e){ return context.res = { status:409, body:{ error:'exists', detail:e.message } }; }
+    catch(e){
+      // Double-check if now exists (race condition) and enrich response
+      let existing = null; try { existing = await eventsTable.getEntity('event', id); } catch{}
+      return context.res = { status:409, body:{ error:'exists', detail:e.message, id, existing: existing ? { title: existing.title, date: existing.date, time: existing.time, published: existing.published, updatedUtc: existing.updatedUtc, createdUtc: existing.createdUtc } : null } };
+    }
   }
   if(method === 'PUT'){
     const body = req.body || {};
