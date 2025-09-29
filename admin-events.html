@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Events Admin – Synthetic & Promotion</title>
+  <link rel="stylesheet" href="/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <style>
+    body{padding-top:3.5rem;}
+    .table-responsive{max-height:60vh;}
+    .mono{font-family:ui-monospace,monospace;font-size:.75rem;}
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Masjid Admin</a>
+      <div class="ms-auto" id="auth-box"></div>
+    </div>
+  </nav>
+  <main class="container py-3">
+    <h1 class="h4 mb-3">Events (Synthetic Management)</h1>
+    <p class="small text-muted">Synthetic events are auto-created when RSVPs arrive before an event is defined. Promote them into <code>events.json</code> or delete if spam.</p>
+    <div class="d-flex gap-2 mb-2">
+      <button id="refreshBtn" class="btn btn-sm btn-primary">Refresh</button>
+    </div>
+    <div class="table-responsive border bg-white rounded">
+      <table class="table table-sm table-hover align-middle mb-0" id="eventsTable">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Date</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="statusMsg" class="small text-muted mt-2"></p>
+  </main>
+  <script src="/js/auth.js"></script>
+  <script>
+    (function(){
+      const API = '/api/synthetic-events';
+      const tbody = document.querySelector('#eventsTable tbody');
+      const statusMsg = document.getElementById('statusMsg');
+      const refreshBtn = document.getElementById('refreshBtn');
+      function esc(s){ return (s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+      async function load(){
+        statusMsg.textContent='Loading...'; tbody.innerHTML='';
+        try {
+          const r = await fetch(API+'?_ts='+Date.now(),{credentials:'include'});
+          if(r.status===401){ statusMsg.textContent='Unauthorized'; return; }
+          const d = await r.json();
+          (d.items||[]).forEach(ev=>{
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="mono">${esc(ev.id)}</td><td>${esc(ev.title)}</td><td>${esc(ev.date||'')}</td><td class="mono small">${esc(ev.createdUtc||'')}</td><td>
+              <button class="btn btn-sm btn-success" data-promote="${esc(ev.id)}">Promote</button>
+              <button class="btn btn-sm btn-outline-danger" data-del="${esc(ev.id)}">Delete</button>
+            </td>`;
+            tbody.appendChild(tr);
+          });
+          statusMsg.textContent = `${d.count||0} synthetic event(s)`;
+        } catch(e){ statusMsg.textContent = 'Error: '+e.message; }
+      }
+      tbody.addEventListener('click', async e=>{
+        if(e.target.matches('button[data-promote]')){
+          const id = e.target.getAttribute('data-promote');
+          if(!confirm('Promote '+id+' into events.json?')) return;
+          try { const r = await fetch(API+'?id='+encodeURIComponent(id), { method:'POST', credentials:'include' }); const data = await r.json(); if(!r.ok){ alert(data.error||'Failed'); } else { alert('Promoted. Update details in events.json.'); load(); } } catch(err){ alert('Error'); }
+        } else if(e.target.matches('button[data-del]')){
+          const id = e.target.getAttribute('data-del');
+          if(!confirm('Delete synthetic meta for '+id+'?')) return;
+          try { const r = await fetch(API+'?id='+encodeURIComponent(id), { method:'DELETE', credentials:'include' }); if(!r.ok){ const t=await r.text(); alert('Delete failed '+t); } else { load(); } } catch(err){ alert('Error'); }
+        }
+      });
+      refreshBtn.addEventListener('click', load);
+      load();
+    })();
+  </script>
+</body>
+</html>

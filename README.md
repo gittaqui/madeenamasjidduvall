@@ -75,6 +75,41 @@ Diagnostics:
 
 All legacy internal write endpoints for subscribe/RSVP now return **410 Gone** with a pointer to the external base URL to avoid duplicate state.
 
+### Synthetic Events & Early RSVPs
+
+If an RSVP arrives for an `eventId` that does not yet exist in `events.json`, the system can now synthesize minimal metadata so admins can see and manage it:
+
+1. The client first attempts the external RSVP endpoint. If it returns 404 / invalid event, the front-end automatically falls back to internal `POST /api/rsvp/create-or-add`.
+2. The fallback endpoint stores the RSVP and (if missing) creates a synthetic metadata row in the RSVP table with `PartitionKey = 'event-meta'` and `RowKey = <eventId>`.
+3. Admin listing (`/api/rsvps`) merges synthetic events, marking them with `synthetic:true`, and the admin UI shows a `(synthetic)` label.
+4. A dedicated admin page `admin-events.html` lists synthetic events allowing:
+   - Promote: Writes a new entry into `events.json` (basic placeholder details) so you can refine it manually.
+   - Delete: Removes the synthetic metadata row (does not delete existing RSVPs for that event).
+
+API endpoints added:
+
+| Endpoint | Method(s) | Purpose |
+|----------|-----------|---------|
+| `/api/rsvp/create-or-add` | POST | Accept RSVP; auto-create synthetic event if missing. |
+| `/api/synthetic-events` | GET | List synthetic event metadata rows. |
+| `/api/synthetic-events?id=...` | POST | Promote synthetic event into `events.json`. |
+| `/api/synthetic-events?id=...` | DELETE | Delete synthetic metadata row. |
+
+Rate limiting:
+
+- Synthetic creation via `/api/rsvp/create-or-add` is limited per IP per day (default 10). Configure with `RSVP_SYNTH_EVENT_LIMIT`.
+
+Honeypot / spam mitigation:
+
+- RSVP and subscribe forms include a `website` (or similar) hidden field (honeypot). Submissions with that field filled can be silently dropped or flagged.
+- Add future captcha by integrating a provider (e.g., hCaptcha) and verifying token server-side before accepting RSVP/subscribe.
+
+Maintenance:
+
+- Synthetic rows live in the main RSVP table under partition `event-meta`.
+- Listing endpoint filters out partitions `event-meta` and `rate` from RSVP rows.
+- Promote action rewrites `events.json`; re-deploy (SWA rebuild) if necessary for CDN cache, or rely on dynamic fetch.
+
 ## Existing Deployment
 
 GitHub Actions workflow `.github/workflows/azure-static-web-app.yml` expects secret:

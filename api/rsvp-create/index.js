@@ -12,6 +12,11 @@ module.exports = async function(context, req){
   const name = (body.name||'').trim();
   const email = (body.email||'').trim().toLowerCase();
   const adults = Number(body.adults||1); const children = Number(body.children||0);
+  const honeypot = (body.website||'').trim();
+  if(honeypot){
+    // Silent accept style: pretend success but drop to waste bot time
+    return context.res = { status:200, body:{ ok:true, ignored:true, reason:'honeypot' } };
+  }
   if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return context.res = { status:400, body:{ ok:false, error:'invalid_email' } };
   const table = getRsvpTable();
   // Basic event existence check
