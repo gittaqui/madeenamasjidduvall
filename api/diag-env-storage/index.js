@@ -11,7 +11,7 @@ module.exports = async function (context, req){
   try {
     const env = process.env;
     const storageKeys = [
-      'STORAGE_ACCOUNT_TABLE_URL','STORAGE_ACCOUNT_BLOB_URL','STORAGE_CONNECTION_STRING','TABLES_SAS',
+      'STORAGE_ACCOUNT_TABLE_URL','STORAGE_ACCOUNT_BLOB_URL','STORAGE_CONNECTION_STRING','TABLES_SAS','TABLES_SAS_B64',
       'SUBSCRIBERS_TABLE','RSVPS_TABLE','EVENTS_TABLE','MANAGED_IDENTITY_CLIENT_ID'
     ];
     const identityIndicators = [
@@ -19,6 +19,12 @@ module.exports = async function (context, req){
     ];
     const storageConfig = {};
     storageKeys.forEach(k=>{ storageConfig[k] = env[k] ? (/(CONNECTION_STRING|SAS)/.test(k)?mask(env[k]):env[k]) : null; });
+    if(env.TABLES_SAS){
+      storageConfig.TABLES_SAS_LENGTH = env.TABLES_SAS.length;
+    }
+    if(env.TABLES_SAS_B64){
+      storageConfig.TABLES_SAS_B64_LENGTH = env.TABLES_SAS_B64.length;
+    }
     const identityVars = {};
     identityIndicators.forEach(k=>{ identityVars[k] = env[k] ? 'present' : null; });
 
@@ -34,7 +40,8 @@ module.exports = async function (context, req){
       notes: [
         'Values containing secrets are masked.',
         'If no identity vars are present, ManagedIdentityCredential will report unavailable.',
-        'Set TABLES_SAS or STORAGE_CONNECTION_STRING for temporary fallback if MI not yet active.'
+        'Set TABLES_SAS (or TABLES_SAS_B64) or STORAGE_CONNECTION_STRING for temporary fallback if MI not yet active.',
+        'TABLES_SAS_LENGTH helps confirm token is not truncated (typical length > 80 chars).'
       ]
     };
     context.res = { status: 200, jsonBody: response };

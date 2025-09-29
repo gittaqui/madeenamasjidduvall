@@ -2,6 +2,16 @@ const { TableClient, TableServiceClient } = require('@azure/data-tables');
 const { AzureSASCredential } = require('@azure/core-auth');
 const { getSpecificTableClient } = require('./tableClient');
 
+// Ensure TABLES_SAS is populated if only TABLES_SAS_B64 provided (defensive duplication of logic in tableClient)
+if(process.env.TABLES_SAS_B64 && !process.env.TABLES_SAS){
+  try {
+    const decoded = Buffer.from(process.env.TABLES_SAS_B64, 'base64').toString('utf8');
+    process.env.TABLES_SAS = decoded.startsWith('?') ? decoded : ('?'+decoded);
+  } catch(e){
+    // silent: diag endpoints will surface absence
+  }
+}
+
 function getEventsTable(){
   const name = process.env.EVENTS_TABLE_NAME || 'Events';
   if(process.env.STORAGE_CONNECTION_STRING){
