@@ -1,0 +1,6 @@
+{
+  "bindings": [
+    { "authLevel": "anonymous", "type": "httpTrigger", "direction": "in", "name": "req", "methods": ["get"], "route": "diag-table-selftest" },
+    { "type": "http", "direction": "out", "name": "res" }
+  ]
+}

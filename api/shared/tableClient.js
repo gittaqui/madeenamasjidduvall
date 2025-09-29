@@ -49,7 +49,10 @@ function getSpecificTableClient(explicitName){
     // 3. Managed Identity / DefaultAzureCredential (preferred secure path)
     _lastAuthMode = process.env.MANAGED_IDENTITY_CLIENT_ID ? 'managed_identity' : 'default_credential_chain';
     const credential = getCredential();
-    return new TableClient(`${accountUrl}/${tableName}`, credential);
+  // Correct constructor usage: first param is account (table service) URL, second is table name, third the credential
+  // Previous (incorrect) code appended the table name to the URL and passed credential as the tableName arg, causing
+  // Azure core serializer to see an object for the "table" path parameter -> "[object Object]" error.
+  return new TableClient(accountUrl.replace(/\/$/, ''), tableName, credential);
   }
 
   try {
