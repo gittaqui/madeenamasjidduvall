@@ -1,5 +1,6 @@
 const { getTableClient } = require('../shared/tableClient');
 const { getEventsTable, ensureEventsTableExists } = require('../shared/eventsTable');
+const { getSubscribersTable, ensureSubscribersTableExists } = require('../shared/subscribersTable');
 
 module.exports = async function(context, req){
   const out = { timeUtc: new Date().toISOString() };
@@ -39,12 +40,13 @@ module.exports = async function(context, req){
     return undefined;
   }
 
-  out.subscribers = await test('Subscribers', ()=>getTableClient());
-  const autocreate = /true/i.test(req.query.autocreate||'') ? ensureEventsTableExists : null;
+  const autocreateFlag = /true/i.test(req.query.autocreate||'');
+  out.subscribers = await test('Subscribers', ()=>getSubscribersTable(), autocreateFlag ? ensureSubscribersTableExists : null);
+  const autocreate = autocreateFlag ? ensureEventsTableExists : null;
   out.events = await test('Events', ()=>getEventsTable(), autocreate);
 
   out.notes = [
-    'Add ?autocreate=true to attempt automatic creation of missing Events table.',
+  'Add ?autocreate=true to attempt automatic creation of missing Subscribers & Events tables.',
     'probeError previously returned raw message; now structured error fields are provided.'
   ];
 

@@ -2,26 +2,24 @@ const { TableClient, TableServiceClient } = require('@azure/data-tables');
 const { AzureSASCredential } = require('@azure/core-auth');
 const { getSpecificTableClient } = require('./tableClient');
 
-function getEventsTable(){
-  const name = process.env.EVENTS_TABLE_NAME || 'Events';
+function getSubscribersTable(){
+  const name = process.env.SUBSCRIBERS_TABLE || 'Subscribers';
   if(process.env.STORAGE_CONNECTION_STRING){
     return TableClient.fromConnectionString(process.env.STORAGE_CONNECTION_STRING, name);
   }
   return getSpecificTableClient(name);
 }
 
-async function ensureEventsTableExists(){
-  const name = process.env.EVENTS_TABLE_NAME || 'Events';
-  // Try a quick list to see if we get a 404
-  const client = getEventsTable();
+async function ensureSubscribersTableExists(){
+  const name = process.env.SUBSCRIBERS_TABLE || 'Subscribers';
+  const client = getSubscribersTable();
   try {
-    const iter = client.listEntities({ queryOptions:{ top:1 } });
+    const iter = client.listEntities({ queryOptions:{ top:1 }});
     await iter.next();
-    return client; // exists
+    return client;
   } catch(e){
     const notFound = (e.statusCode === 404 || e.code === 'TableNotFound' || e.code === 'ResourceNotFound');
-    if(notFound && !process.env.DISABLE_AUTO_CREATE_EVENTS_TABLE){
-      // Need service-level client to create table
+    if(notFound && !process.env.DISABLE_AUTO_CREATE_SUBSCRIBERS_TABLE){
       try {
         if(process.env.STORAGE_CONNECTION_STRING){
           const svc = TableServiceClient.fromConnectionString(process.env.STORAGE_CONNECTION_STRING);
@@ -42,20 +40,11 @@ async function ensureEventsTableExists(){
             await svc.createTable(name);
           }
         }
-        return getEventsTable();
+        return getSubscribersTable();
       } catch(inner){ throw inner; }
-    }
-    // If name had uppercase letters and not found, retry in lower-case (Azure tables are case-insensitive, but rarely casing issues surface in some tools)
-    if(notFound && /[A-Z]/.test(name)){
-      try {
-        const lowerClient = getSpecificTableClient(name.toLowerCase());
-        const iter = lowerClient.listEntities({ queryOptions:{ top:1 } });
-        await iter.next();
-        return lowerClient;
-      } catch {/* ignore and rethrow original */}
     }
     throw e;
   }
 }
 
-module.exports = { getEventsTable, ensureEventsTableExists };
+module.exports = { getSubscribersTable, ensureSubscribersTableExists };
