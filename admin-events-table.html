@@ -19,14 +19,14 @@
     <p class="small text-muted">CRUD interface backed by dedicated Azure Table (<code>Events</code> or overridden by <code>EVENTS_TABLE_NAME</code>). Provides aggregated RSVP stats (on demand) and allows publishing control.</p>
     <div class="d-flex flex-wrap gap-2 mb-2">
       <button id="refreshBtn" class="btn btn-sm btn-primary">Refresh</button>
-      <button id="showFormBtn" class="btn btn-sm btn-success" type="button">New Event</button>
       <div class="form-check form-switch ms-3">
         <input class="form-check-input" type="checkbox" id="statsToggle">
         <label class="form-check-label small" for="statsToggle">Include RSVP Stats</label>
       </div>
     </div>
+    <p class="small text-warning mb-2">Event creation disabled. To add a new event, update <code>events.json</code> (or planned site-config events section) and redeploy.</p>
     <div id="formWrapper" class="border rounded p-3 bg-light mb-3 d-none">
-      <h2 class="h6 mb-3" id="formTitle">Create Event</h2>
+      <h2 class="h6 mb-3" id="formTitle">Edit Event</h2>
       <form id="eventForm" novalidate class="row g-2">
         <input type="hidden" id="eventId" />
         <div class="col-md-4">
@@ -54,7 +54,7 @@
           <textarea id="description" class="form-control" rows="3" maxlength="1200"></textarea>
         </div>
         <div class="col-12 d-flex gap-2">
-          <button class="btn btn-primary" type="submit" id="saveBtn">Save</button>
+          <button class="btn btn-primary" type="submit" id="saveBtn">Save Changes</button>
           <button class="btn btn-secondary" type="button" id="resetBtn">Reset</button>
           <button class="btn btn-outline-secondary ms-auto" type="button" id="cancelEditBtn">Close</button>
         </div>
@@ -79,8 +79,7 @@
       const API = '/api/events';
       const tbody=document.querySelector('#eventsTable tbody');
       const statusMsg=document.getElementById('statusMsg');
-      const refreshBtn=document.getElementById('refreshBtn');
-  const showFormBtn=document.getElementById('showFormBtn');
+    const refreshBtn=document.getElementById('refreshBtn');
   const formWrapper=document.getElementById('formWrapper');
   const form=document.getElementById('eventForm');
   const formTitle=document.getElementById('formTitle');
@@ -115,10 +114,7 @@
           statusMsg.textContent=`${d.count||0} event(s)`;
         }catch(e){ statusMsg.textContent='Error: '+e.message; }
       }
-      function openCreateForm(){
-        form.reset(); idInput.value=''; formTitle.textContent='Create Event'; formStatus.textContent=''; pubInput.checked=true; dateInput.value=new Date().toISOString().substring(0,10); timeInput.value='00:00';
-        formWrapper.classList.remove('d-none'); titleInput.focus();
-      }
+      // Creation disabled: only editing existing events is allowed.
       function openEditForm(existing){
         idInput.value=existing.id; titleInput.value=existing.title; dateInput.value=existing.date||''; timeInput.value=existing.time||'00:00'; pubInput.checked=existing.published!==false; descInput.value=existing.description||''; imgInput.value=existing.image||'';
         formTitle.textContent='Edit Event'; formStatus.textContent='Editing '+existing.id; formWrapper.classList.remove('d-none'); titleInput.focus();
@@ -126,7 +122,8 @@
       async function submitForm(e){
         e.preventDefault(); formStatus.textContent='Saving...';
         if(!titleInput.value.trim() || !dateInput.value){ formStatus.textContent='Title and Date required'; return; }
-        const isEdit = !!idInput.value;
+  const isEdit = !!idInput.value; // must be true; creation disabled
+  if(!isEdit){ formStatus.textContent='Creation disabled. Add new events via events.json.'; return; }
         const payload = {
           title: titleInput.value.trim(),
           date: dateInput.value,
@@ -164,7 +161,7 @@
           try{ const r=await fetch(API+'?id='+encodeURIComponent(id),{method:'DELETE', credentials:'include'}); if(!r.ok){ alert('Delete failed'); } else { load(); } }catch{ alert('Delete error'); }
         }
       });
-      showFormBtn.addEventListener('click', ()=>openCreateForm());
+  // New Event button removed (creation disabled)
       refreshBtn.addEventListener('click', load);
       statsToggle.addEventListener('change', load);
       load();

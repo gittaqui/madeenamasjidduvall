@@ -25,5 +25,14 @@
     "description": "Eid salah followed by light refreshments. Please arrive 15 minutes early.",
   "image": "img/events-3.jpg",
     "published": false
+  },
+  {
+    "id": "friday-halaqa-2025-10-12",
+    "title": "Friday Family Halaqa",
+    "date": "2025-10-12",
+    "time": "19:30",
+    "description": "Weekly family-friendly halaqa after Maghrib. All are welcome.",
+  "image": "img/events-3.jpg",
+    "published": true
   }
 ]
