@@ -6,7 +6,7 @@
     "time": "19:30",
     "description": "Weekly family-friendly halaqa after Maghrib. All are welcome.",
   "image": "img/events-1.jpg",
-    "published": true
+    "published": false
   },
   {
     "id": "community-cleanup-2025-10-19",
@@ -32,7 +32,7 @@
     "date": "2025-10-12",
     "time": "19:30",
     "description": "Weekly family-friendly halaqa after Maghrib. All are welcome.",
-  "image": "img/events-3.jpg",
+  "image": "img/events-1.jpg",
     "published": true
   }
 ]
