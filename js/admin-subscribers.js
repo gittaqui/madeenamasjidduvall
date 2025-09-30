@@ -16,7 +16,7 @@
     tbody.innerHTML='';
     const status = currentStatus();
     try {
-  const res = await fetch(`${API_BASE}/subscribers?status=${encodeURIComponent(status)}`, { credentials:'include', cache:'no-store' });
+  const res = await fetch(`${API_BASE}/subscribers?status=${encodeURIComponent(status)}&_ts=${Date.now()}`, { credentials:'include', cache:'no-store' });
       if(!res.ok) throw new Error(res.status+' error');
       const data = await res.json();
       if(!data.ok) throw new Error('API error');
@@ -26,7 +26,7 @@
         const actions = [];
         if(status === 'pending') actions.push(`<button class="btn btn-sm btn-outline-success me-1" data-activate="${row.hash}">Activate</button>`);
         actions.push(`<button class="btn btn-sm btn-outline-danger" data-hash="${row.hash}">Delete</button>`);
-        tr.innerHTML = `<td>${row.email||''}</td><td>${status}</td><td>${fmt(row.createdUtc)}</td><td>${fmt(row.confirmedUtc)}</td><td>${fmt(row.unsubUtc)}</td><td>${actions.join('')}</td>`;
+  tr.innerHTML = `<td>${row.email||''}</td><td>${status}</td><td class="text-truncate" style="max-width:140px" title="${row.hash}">${fmt(row.createdUtc)}</td><td>${fmt(row.confirmedUtc)}</td><td>${fmt(row.unsubUtc)}</td><td>${actions.join('')}</td>`;
         tbody.appendChild(tr);
       }
     } catch(err){
