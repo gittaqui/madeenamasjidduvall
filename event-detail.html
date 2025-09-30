@@ -97,7 +97,13 @@
 
     async function loadEvents(){
       try{
-        const all = await fetch('/events.json?ts='+Date.now(),{cache:'no-store'}).then(r=>r.json()).catch(()=>[]);
+        async function loadAll(){
+          // site-config.json first
+          try { const cfg = await fetch('/site-config.json?ts='+Date.now(),{cache:'no-store'}); if(cfg.ok){ const j = await cfg.json(); if(j && Array.isArray(j.events) && j.events.length) return j.events; } } catch{}
+          try { const ev = await fetch('/events.json?ts='+Date.now(),{cache:'no-store'}); if(ev.ok) return await ev.json(); } catch{}
+          return [];
+        }
+        const all = await loadAll();
         const main = all.find(e=> e.id===evId);
         if(!main){ titleEl.textContent='Event Not Found'; rsvpForm.classList.add('d-none'); return; }
         // Populate

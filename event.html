@@ -300,17 +300,37 @@
             // Populate event dropdown
             document.addEventListener('DOMContentLoaded', ()=>{
                 setTimeout(()=>{
-                    fetch('events.json',{cache:'no-store'}).then(r=>r.json()).then(all=>{
-                        const today = new Date(); today.setHours(0,0,0,0);
-                        const upcoming = (all||[]).filter(e=> e.published !== false).filter(e=>{ const d = new Date(e.date+'T00:00:00'); return !isNaN(d) && d >= today; }).sort((a,b)=> (a.date||'').localeCompare(b.date||''));
-                        if(upcoming.length){
-                            eventSelect.innerHTML = upcoming.map(ev=>`<option value="${ev.id}">${ev.title} (${ev.date})</option>`).join('');
-                            currentEventId = upcoming[0].id;
-                            refreshStats();
-                        } else {
-                            eventSelect.innerHTML = '<option value="">No upcoming events</option>';
-                        }
-                    }).catch(()=>{});
+                                        (async ()=>{
+                                            async function loadAll(){
+                                                // Try site-config.json first
+                                                try {
+                                                    const cfgResp = await fetch('site-config.json',{cache:'no-store'});
+                                                    if(cfgResp.ok){
+                                                        const cfg = await cfgResp.json();
+                                                        if(cfg && Array.isArray(cfg.events) && cfg.events.length) return cfg.events;
+                                                    }
+                                                } catch{}
+                                                // Fallback legacy events.json
+                                                try {
+                                                    const evResp = await fetch('events.json',{cache:'no-store'});
+                                                    if(evResp.ok) return await evResp.json();
+                                                } catch{}
+                                                return [];
+                                            }
+                                            const all = await loadAll();
+                                            const today = new Date(); today.setHours(0,0,0,0);
+                                            const upcoming = (all||[])
+                                                .filter(e=> e && e.published !== false)
+                                                .filter(e=>{ const d = new Date(e.date+'T00:00:00'); return !isNaN(d) && d >= today; })
+                                                .sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+                                            if(upcoming.length){
+                                                eventSelect.innerHTML = upcoming.map(ev=>`<option value="${ev.id}">${ev.title} (${ev.date})</option>`).join('');
+                                                currentEventId = upcoming[0].id;
+                                                refreshStats();
+                                            } else {
+                                                eventSelect.innerHTML = '<option value="">No upcoming events</option>';
+                                            }
+                                        })();
                 }, 300); // allow events.js to finish
             });
             if(eventSelect){
