@@ -34,28 +34,39 @@ module.exports = async function(context, req){
     catch(e){ return context.res = { status:404, body:{ error:'Not found' } }; }
   }
   if(method === 'POST'){
-    // Promote a synthetic event into events.json
+  // Promote a synthetic event into site-config.json (events array) else legacy events.json
     const id = (req.query.id||'').trim();
     if(!id) return context.res = { status:400, body:{ error:'Missing id' } };
     let meta = null;
     try { meta = await table.getEntity('event-meta', id); } catch{}
     if(!meta) return context.res = { status:404, body:{ error:'Meta not found' } };
-    // Load existing events.json (attempt several locations)
-    const candidates = [
-      path.join(__dirname,'..','..','events.json'),
-      path.join(process.cwd(),'events.json')
+    // Attempt site-config.json first
+    const cfgPaths = [
+      path.join(__dirname,'..','..','site-config.json'),
+      path.join(process.cwd(),'site-config.json')
     ];
-    let eventsPath = null; let events = null;
-    for(const p of candidates){
-      try { const raw = await fs.promises.readFile(p,'utf8'); const json = JSON.parse(raw); if(Array.isArray(json)){ eventsPath=p; events=json; break; } } catch{}
+    let cfgPath=null, cfgObj=null;
+    for(const p of cfgPaths){
+      try { const raw = await fs.promises.readFile(p,'utf8'); const json = JSON.parse(raw); if(json && typeof json==='object'){ cfgPath=p; cfgObj=json; break; } } catch{}
     }
-    if(!events){
-      // If no file found, initialize a new one at repo root relative
-      eventsPath = path.join(__dirname,'..','..','events.json');
-      events = [];
-    }
-    if(events.some(e=> e.id === id)){
-      return context.res = { status:409, body:{ error:'Already exists in events.json' } };
+    let targetIsSiteConfig = false;
+    let events = [];
+    if(cfgObj){
+      if(!Array.isArray(cfgObj.events)) cfgObj.events = [];
+      events = cfgObj.events;
+      targetIsSiteConfig = true;
+      if(events.some(e=> e.id === id)) return context.res = { status:409, body:{ error:'Already exists in site-config events' } };
+    } else {
+      // fallback to legacy events.json
+      const evPaths = [
+        path.join(__dirname,'..','..','events.json'),
+        path.join(process.cwd(),'events.json')
+      ];
+      for(const p of evPaths){
+        try { const raw = await fs.promises.readFile(p,'utf8'); const json = JSON.parse(raw); if(Array.isArray(json)){ cfgPath=p; events=json; break; } } catch{}
+      }
+      if(!events.length){ cfgPath = path.join(__dirname,'..','..','events.json'); events=[]; }
+      if(events.some(e=> e.id === id)) return context.res = { status:409, body:{ error:'Already exists in events.json' } };
     }
     const newEvent = {
       id,
@@ -68,8 +79,12 @@ module.exports = async function(context, req){
     };
     events.push(newEvent);
     try {
-      await fs.promises.writeFile(eventsPath, JSON.stringify(events,null,2));
-      return context.res = { status:200, body:{ ok:true, promoted: newEvent, path: eventsPath } };
+      if(targetIsSiteConfig){
+        await fs.promises.writeFile(cfgPath, JSON.stringify(cfgObj,null,2));
+      } else {
+        await fs.promises.writeFile(cfgPath, JSON.stringify(events,null,2));
+      }
+      return context.res = { status:200, body:{ ok:true, promoted: newEvent, path: cfgPath, target: targetIsSiteConfig?'site-config':'events.json' } };
     } catch(e){
       return context.res = { status:500, body:{ error:'Write failed', detail:e.message } };
     }

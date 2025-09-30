@@ -1,6 +1,7 @@
 // Home page Next Event teaser
 (function(){
-  const EVENTS_URL = 'events.json';
+  const CONFIG_URL = 'site-config.json';
+  const EVENTS_JSON_FALLBACK = 'events.json';
   function fmtDate(iso){
     try{
       const d = new Date(iso+'T00:00:00');
@@ -52,9 +53,18 @@
     const el = document.getElementById('home-next-event');
     if(!el) return;
     try{
-      const resp = await fetch(EVENTS_URL, { cache: 'no-store' });
-      if(!resp.ok) throw new Error('Failed to load events');
-      const all = await resp.json();
+      let all = [];
+      try {
+        const cfgResp = await fetch(CONFIG_URL, { cache:'no-store' });
+        if(cfgResp.ok){
+          const cfg = await cfgResp.json();
+          if(cfg && Array.isArray(cfg.events)) all = cfg.events;
+        }
+      } catch{/* ignore */}
+      if(!all.length){
+        const resp = await fetch(EVENTS_JSON_FALLBACK, { cache: 'no-store' });
+        if(resp.ok) all = await resp.json();
+      }
       const today = new Date(); today.setHours(0,0,0,0);
       const upcoming = (all||[])
         .filter(e => e.published !== false)

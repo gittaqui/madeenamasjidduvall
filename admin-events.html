@@ -21,7 +21,7 @@
   </nav>
   <main class="container py-3">
     <h1 class="h4 mb-3">Events (Synthetic Management)</h1>
-    <p class="small text-muted">Synthetic events are auto-created when RSVPs arrive before an event is defined. Promote them into <code>events.json</code> or delete if spam.</p>
+  <p class="small text-muted">Synthetic events are auto-created when RSVPs arrive before an event is defined. Promote them into <code>site-config.json</code> (events array) or delete if spam. (Legacy <code>events.json</code> fallback still works.)</p>
     <div class="d-flex gap-2 mb-2">
       <button id="refreshBtn" class="btn btn-sm btn-primary">Refresh</button>
     </div>
@@ -69,8 +69,8 @@
       tbody.addEventListener('click', async e=>{
         if(e.target.matches('button[data-promote]')){
           const id = e.target.getAttribute('data-promote');
-          if(!confirm('Promote '+id+' into events.json?')) return;
-          try { const r = await fetch(API+'?id='+encodeURIComponent(id), { method:'POST', credentials:'include' }); const data = await r.json(); if(!r.ok){ alert(data.error||'Failed'); } else { alert('Promoted. Update details in events.json.'); load(); } } catch(err){ alert('Error'); }
+          if(!confirm('Promote '+id+' into site-config.json events array?')) return;
+          try { const r = await fetch(API+'?id='+encodeURIComponent(id), { method:'POST', credentials:'include' }); const data = await r.json(); if(!r.ok){ alert(data.error||'Failed'); } else { alert('Promoted. Update details in site-config.json (events array).'); load(); } } catch(err){ alert('Error'); }
         } else if(e.target.matches('button[data-del]')){
           const id = e.target.getAttribute('data-del');
           if(!confirm('Delete synthetic meta for '+id+'?')) return;

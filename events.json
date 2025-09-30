@@ -15,7 +15,7 @@
     "time": "09:00",
     "description": "Join volunteers to help clean and beautify our neighborhood. Bring gloves if you have them.",
   "image": "img/events-2.jpg",
-    "published": true
+    "published": false
   },
   {
     "id": "eid-al-adha-2025-06-07",

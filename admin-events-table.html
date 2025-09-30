@@ -24,7 +24,7 @@
         <label class="form-check-label small" for="statsToggle">Include RSVP Stats</label>
       </div>
     </div>
-    <p class="small text-warning mb-2">Event creation disabled. To add a new event, update <code>events.json</code> (or planned site-config events section) and redeploy.</p>
+  <p class="small text-warning mb-2">Event creation disabled. To add a new event, edit <code>site-config.json</code> ("events" array) and redeploy. (Legacy <code>events.json</code> still supported as fallback.)</p>
     <div id="formWrapper" class="border rounded p-3 bg-light mb-3 d-none">
       <h2 class="h6 mb-3" id="formTitle">Edit Event</h2>
       <form id="eventForm" novalidate class="row g-2">
@@ -123,7 +123,7 @@
         e.preventDefault(); formStatus.textContent='Saving...';
         if(!titleInput.value.trim() || !dateInput.value){ formStatus.textContent='Title and Date required'; return; }
   const isEdit = !!idInput.value; // must be true; creation disabled
-  if(!isEdit){ formStatus.textContent='Creation disabled. Add new events via events.json.'; return; }
+  if(!isEdit){ formStatus.textContent='Creation disabled. Add new events via site-config.json.'; return; }
         const payload = {
           title: titleInput.value.trim(),
           date: dateInput.value,

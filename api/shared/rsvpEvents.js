@@ -26,26 +26,39 @@ function resolveOrigin(req){
 }
 
 async function loadEvents(req){
-  // Attempt multiple filesystem locations (local dev: root has events.json; prod Functions: root may not include it)
-  const candidates = [
-    path.join(__dirname, '..', '..', 'events.json'), // repo root when running locally
-    path.join(__dirname, '..', 'events.json'),        // if copied into api/
-    path.join(process.cwd(), 'events.json')           // current working dir fallback
+  // 1. Try site-config.json for embedded events array
+  const cfgCandidates = [
+    path.join(__dirname, '..', '..', 'site-config.json'),
+    path.join(process.cwd(), 'site-config.json')
   ];
-  for(const p of candidates){
-    const data = await tryRead(p);
-    if(data && Array.isArray(data)) return data;
+  for(const p of cfgCandidates){
+    const cfg = await tryRead(p);
+    if(cfg && Array.isArray(cfg.events) && cfg.events.length) return cfg.events;
   }
-  // Fallback: HTTP fetch from any resolvable origin (SITE_ORIGIN, headers, WEBSITE_HOSTNAME)
+  // 2. Fallback to legacy events.json
+  const eventsCandidates = [
+    path.join(__dirname, '..', '..', 'events.json'),
+    path.join(__dirname, '..', 'events.json'),
+    path.join(process.cwd(), 'events.json')
+  ];
+  for(const p of eventsCandidates){
+    const data = await tryRead(p);
+    if(data && Array.isArray(data) && data.length) return data;
+  }
+  // 3. HTTP fetches (site-config first, then events.json)
   const origin = resolveOrigin(req);
   if(origin){
-    try {
-      const resp = await fetch(origin + '/events.json', { method:'GET', headers:{'Accept':'application/json'} });
-      if(resp.ok){
-        const json = await resp.json();
-        if(Array.isArray(json)) return json;
-      }
-    } catch {/* ignore network issues */}
+    const httpSources = ['/site-config.json','/events.json'];
+    for(const rel of httpSources){
+      try {
+        const resp = await fetch(origin + rel, { method:'GET', headers:{'Accept':'application/json'} });
+        if(resp.ok){
+          const json = await resp.json();
+            if(rel.includes('site-config') && json && Array.isArray(json.events) && json.events.length) return json.events;
+            if(rel.includes('events.json') && Array.isArray(json) && json.length) return json;
+        }
+      } catch {/* ignore network issues */}
+    }
   }
   return []; // final fallback
 }

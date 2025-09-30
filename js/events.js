@@ -1,6 +1,7 @@
 // Dynamic events renderer for Madeena Masjid Duvall
 (function(){
-  const EVENTS_URL = 'events.json';
+  const CONFIG_URL = 'site-config.json';
+  const EVENTS_JSON_FALLBACK = 'events.json';
   function fmtDate(iso){
     try{
       const d = new Date(iso + 'T00:00:00');
@@ -47,9 +48,18 @@
     const container = document.getElementById('events-list');
     if(!container) return;
     try{
-      const resp = await fetch(EVENTS_URL, { cache: 'no-store' });
-      if(!resp.ok) throw new Error('Failed to load events');
-      const all = await resp.json();
+      let all = [];
+      try {
+        const cfgResp = await fetch(CONFIG_URL, { cache:'no-store' });
+        if(cfgResp.ok){
+          const cfg = await cfgResp.json();
+          if(cfg && Array.isArray(cfg.events)) all = cfg.events;
+        }
+      } catch{/* ignore */}
+      if(!all.length){
+        const resp = await fetch(EVENTS_JSON_FALLBACK, { cache: 'no-store' });
+        if(resp.ok){ all = await resp.json(); }
+      }
       const today = new Date(); today.setHours(0,0,0,0);
       const upcoming = (all||[])
         .filter(e => e.published !== false)
@@ -62,7 +72,7 @@
       container.innerHTML = upcoming.map((e,i)=>cardHtml(e, 0.1 + i*0.2)).join('');
       if (window.WOW) new WOW().init();
     }catch(err){
-      console.warn('Events failed to load:', err);
+  console.warn('Events failed to load:', err);
       container.innerHTML = '<p class="text-dark">Events are unavailable right now.</p>';
     }
   }
