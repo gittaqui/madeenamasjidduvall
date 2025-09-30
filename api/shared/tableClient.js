@@ -30,6 +30,17 @@ function getSpecificTableClient(explicitName){
   }
 
   function build(){
+    // Allow a base64 encoded connection string to avoid shell parsing issues with ';'
+    if(process.env.STORAGE_CONNECTION_STRING_B64 && !process.env.STORAGE_CONNECTION_STRING){
+      try {
+        const decodedCs = Buffer.from(process.env.STORAGE_CONNECTION_STRING_B64, 'base64').toString('utf8');
+        if(decodedCs.includes('AccountKey=') && decodedCs.includes('TableEndpoint=')){
+          process.env.STORAGE_CONNECTION_STRING = decodedCs;
+        }
+      } catch(e){
+        console.warn('[tableClient] Failed to decode STORAGE_CONNECTION_STRING_B64:', e.message);
+      }
+    }
     // Optional: allow providing a base64-encoded SAS to avoid shell escaping issues with '&'
     if(process.env.TABLES_SAS_B64 && !process.env.TABLES_SAS){
       try {
