@@ -22,8 +22,15 @@ module.exports = async function (context, req){
     if(!eventId || !email){
       return context.res = { status:400, body:{ error:'Missing eventId or email' } };
     }
-    try { await table.deleteEntity(eventId, email); context.res = { status:200, body:{ ok:true } }; }
-    catch(e){ context.res = { status:404, body:{ error:'Not found' } }; }
+    try { 
+      await table.deleteEntity(eventId, email); 
+      context.log('[rsvps] delete ok', eventId, email);
+      context.res = { status:200, body:{ ok:true } }; 
+    }
+    catch(e){ 
+      context.log('[rsvps] delete fail', eventId, email, e.message);
+      context.res = { status:404, body:{ error:'Not found' } }; 
+    }
     return;
   }
   // GET listing

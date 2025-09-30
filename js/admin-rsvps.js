@@ -9,6 +9,7 @@
   const limitInput = document.getElementById('limitInput');
   const refreshBtn = document.getElementById('refreshBtn');
   const csvBtn = document.getElementById('csvBtn');
+  const deleteAllEventBtn = document.getElementById('deleteAllEventBtn');
   const tbody = document.querySelector('#rsvpTable tbody');
   const summaryBox = document.getElementById('summaryBox');
   const notesBox = document.getElementById('notesBox');
@@ -32,7 +33,7 @@
     renderRows(filtered);
   }
   function renderRows(rows){
-    tbody.innerHTML = rows.map(r=>`<tr>
+    tbody.innerHTML = rows.map(r=>`<tr data-event="${encodeURIComponent(r.eventId)}" data-email="${encodeURIComponent(r.email)}">
       <td class="text-nowrap">${escapeHtml(r.eventId)}</td>
       <td>${escapeHtml(r.name||'')}</td>
       <td class="mono">${escapeHtml(r.email)}</td>
@@ -42,10 +43,12 @@
       <td class="text-nowrap small">${fmtDate(r.createdUtc)}</td>
       <td class="text-nowrap small">${fmtDate(r.confirmedUtc)}</td>
       <td class="text-nowrap small">${fmtDate(r.canceledUtc)}</td>
+      <td class="text-center"><button class="btn btn-sm btn-outline-danger btn-del" aria-label="Delete RSVP" title="Delete RSVP">✕</button></td>
     </tr>`).join('');
     const totalAdults = rows.reduce((a,b)=> a + (Number(b.adults)||0),0);
     const totalChildren = rows.reduce((a,b)=> a + (Number(b.children)||0),0);
     summaryBox.textContent = `${rows.length} row(s) | Adults ${totalAdults} | Children ${totalChildren}`;
+    wireRowDeleteHandlers();
   }
   function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]||c)); }
   async function load(){
@@ -92,14 +95,65 @@
         eventSel.appendChild(opt);
       });
     }
+    updateDeleteAllVisibility();
   }
   function updateCsvLink(){
     const ev = eventSel.value||'';
   const href = `${API_BASE}/rsvps?format=csv${ev?`&eventId=${encodeURIComponent(ev)}`:''}`;
     csvBtn.href = href;
   }
+  function updateDeleteAllVisibility(){
+    const ev = eventSel.value||'';
+    if(ev){ deleteAllEventBtn.classList.remove('d-none'); deleteAllEventBtn.disabled = false; }
+    else { deleteAllEventBtn.classList.add('d-none'); }
+  }
+  async function deleteOne(eventId,email,btn){
+    if(!confirm(`Delete RSVP for ${email} on event ${eventId}? This cannot be undone.`)) return;
+    btn.disabled = true; btn.textContent = '…';
+    try {
+      const url = `${API_BASE}/rsvps?eventId=${encodeURIComponent(eventId)}&email=${encodeURIComponent(email)}`;
+      const resp = await fetch(url,{ method:'DELETE', credentials:'include'});
+      if(!resp.ok){ throw new Error('Delete failed '+resp.status); }
+      // remove from local array & re-render
+      allItems = allItems.filter(i=> !(i.eventId===eventId && i.email===email));
+      applyFilters();
+    } catch(e){ alert('Error: '+e.message); btn.disabled=false; btn.textContent='✕'; }
+  }
+  function wireRowDeleteHandlers(){
+    tbody.querySelectorAll('.btn-del').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const tr = btn.closest('tr');
+        if(!tr) return;
+        const eventId = decodeURIComponent(tr.getAttribute('data-event'));
+        const email = decodeURIComponent(tr.getAttribute('data-email'));
+        deleteOne(eventId,email,btn);
+      });
+    });
+  }
+  async function deleteAllForEvent(){
+    const ev = eventSel.value||'';
+    if(!ev) return;
+    const rowsForEv = allItems.filter(i=> i.eventId===ev);
+    if(!rowsForEv.length){ alert('No rows for that event.'); return; }
+    if(!confirm(`Delete ALL ${rowsForEv.length} RSVP(s) for event ${ev}? This cannot be undone.`)) return;
+    deleteAllEventBtn.disabled = true; deleteAllEventBtn.textContent = 'Deleting…';
+    let success = 0, fail=0;
+    for(const r of rowsForEv){
+      try {
+        const url = `${API_BASE}/rsvps?eventId=${encodeURIComponent(r.eventId)}&email=${encodeURIComponent(r.email)}`;
+        const resp = await fetch(url,{ method:'DELETE', credentials:'include'});
+        if(resp.ok){ success++; }
+        else { fail++; }
+      } catch { fail++; }
+    }
+    deleteAllEventBtn.disabled = false; deleteAllEventBtn.textContent = 'Delete All (Event)';
+    // reload list to ensure consistency
+    await load();
+    alert(`Bulk delete complete. Success: ${success}, Failed: ${fail}`);
+  }
+  deleteAllEventBtn.addEventListener('click', deleteAllForEvent);
   refreshBtn.addEventListener('click', load);
-  eventSel.addEventListener('change', ()=>{ applyFilters(); updateCsvLink(); });
+  eventSel.addEventListener('change', ()=>{ applyFilters(); updateCsvLink(); updateDeleteAllVisibility(); });
   statusSel.addEventListener('change', applyFilters);
   limitInput.addEventListener('change', load);
   load();

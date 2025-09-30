@@ -25,7 +25,7 @@
     <h1 class="h4 mb-3">RSVP Management</h1>
     <p class="text-muted small">View and export RSVP responses. Data shown is limited to latest 1000 by default (adjustable). Use CSV export for full offline analysis.</p>
 
-    <div class="filter-bar d-flex flex-wrap gap-2 align-items-end mb-3">
+  <div class="filter-bar d-flex flex-wrap gap-2 align-items-end mb-3">
       <div>
         <label class="form-label mb-1 small">Event</label>
   <select id="eventFilter" class="form-select form-select-sm" aria-label="Filter by event">
@@ -49,6 +49,7 @@
       <div class="d-flex gap-2">
         <button id="refreshBtn" class="btn btn-sm btn-primary">Refresh</button>
         <a id="csvBtn" class="btn btn-sm btn-outline-secondary" href="#" download>Export CSV</a>
+        <button id="deleteAllEventBtn" class="btn btn-sm btn-danger d-none" title="Delete ALL RSVPs for selected event (irreversible)">Delete All (Event)</button>
       </div>
       <div class="ms-auto small text-secondary" id="summaryBox"></div>
     </div>
@@ -66,6 +67,7 @@
             <th scope="col">Created</th>
             <th scope="col">Confirmed</th>
             <th scope="col">Canceled</th>
+            <th scope="col" class="text-center">Actions</th>
           </tr>
         </thead>
         <tbody></tbody>
