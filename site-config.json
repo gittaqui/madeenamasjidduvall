@@ -42,15 +42,6 @@
   },
   "events": [
     {
-      "id": "friday-halaqa-2025-10-03",
-      "title": "Friday Family Halaqa",
-      "date": "2025-10-03",
-      "time": "19:30",
-      "description": "Weekly family-friendly halaqa after Maghrib. All are welcome.",
-      "image": "img/events-1.jpg",
-      "published": false
-    },
-    {
       "id": "community-cleanup-2025-10-19",
       "title": "Community Cleanup Day",
       "date": "2025-10-19",
@@ -69,7 +60,7 @@
       "published": false
     },
     {
-      "id": "friday-halaqa-2025-10-12",
+      "id": "friday-halaqa-2025-10-10",
       "title": "Friday Family Halaqa",
       "date": "2025-10-12",
       "time": "19:30",
