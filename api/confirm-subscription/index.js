@@ -3,13 +3,16 @@ const crypto = require('crypto');
 function sha256Hex(v){ return crypto.createHash('sha256').update(v,'utf8').digest('hex'); }
 
 module.exports = async function (context, req){
+  const debug = (req.query.debug||'').toLowerCase()==='1';
   const token = (req.query.token||'').trim();
   const emailParam = (req.query.email||'').trim().toLowerCase();
   const hashParam = emailParam ? sha256Hex(emailParam) : (req.query.hash||'').trim().toLowerCase();
   if(!token && !hashParam){
     return context.res = { status:400, body:{ ok:false, error:'missing_token_or_hash' } };
   }
-  const table = getTableClient();
+  let table;
+  try { table = getTableClient(); } catch(e){ return context.res = { status:500, body:{ ok:false, error:'table_init_failed', detail:e.message } }; }
+  try { await table.createTable(); } catch(e){ if(!/TableAlreadyExists/i.test(e.message)) context.log('[confirm-subscription] createTable note', e.message); }
   let hash = hashParam;
   let pending=null, tokenRow=null, active=null, unsub=null;
   if(token){
@@ -31,8 +34,12 @@ module.exports = async function (context, req){
   const email = pending? pending.email : (tokenRow? tokenRow.email : emailParam || 'unknown');
   const createdUtc = pending? pending.createdUtc : (tokenRow? tokenRow.createdUtc : new Date().toISOString());
   const now = new Date().toISOString();
-  await table.upsertEntity({ partitionKey:'active', rowKey:hash, email, createdUtc, confirmedUtc: now });
-  try { await table.deleteEntity('pending', hash); } catch {}
-  if(token){ try { await table.deleteEntity('token', token); } catch {} }
+  try {
+    await table.upsertEntity({ partitionKey:'active', rowKey:hash, email, createdUtc, confirmedUtc: now });
+    try { await table.deleteEntity('pending', hash); } catch {}
+    if(token){ try { await table.deleteEntity('token', token); } catch {} }
+  } catch(e){
+    return context.res = { status:500, body:{ ok:false, error:'activate_failed', detail:e.message, stack: debug? e.stack: undefined } };
+  }
   return context.res = { status:200, body:{ ok:true, status:'activated', confirmedUtc: now } };
 };

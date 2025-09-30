@@ -10,6 +10,7 @@ function sha256Hex(v){ return crypto.createHash('sha256').update(v,'utf8').diges
 function randomToken(){ return crypto.randomBytes(24).toString('hex'); }
 
 module.exports = async function(context, req){
+  const debug = (req.query.debug||'').toLowerCase()==='1';
   const body = (req.body || {});
   const email = (body.email||'').trim().toLowerCase();
   const websiteField = (body.website||'').trim(); // honeypot
@@ -19,9 +20,14 @@ module.exports = async function(context, req){
   if(websiteField){ // bot honeypot
     return context.res = { status:200, body:{ ok:true, status:'ignored' } };
   }
-  const table = getTableClient();
+  let table;
+  try { table = getTableClient(); }
+  catch(e){
+    return context.res = { status:500, body:{ ok:false, error:'table_init_failed', detail:e.message } };
+  }
+  // Ensure table exists (create if needed once)
+  try { await table.createTable(); } catch(e){ if(!/TableAlreadyExists/i.test(e.message)) context.log('[subscribe] createTable note', e.message); }
   const hash = sha256Hex(email);
-  // Check existing states
   let active=null, pending=null, unsub=null;
   try { active = await table.getEntity('active', hash); } catch {}
   try { pending = await table.getEntity('pending', hash); } catch {}
@@ -32,11 +38,13 @@ module.exports = async function(context, req){
   if(unsub){
     return context.res = { status:409, body:{ ok:false, error:'unsubscribed' } };
   }
-  // If pending exists, refresh token (optional) else create new pending + token
   const now = new Date().toISOString();
   let token = pending && pending.token ? pending.token : randomToken();
-  // Token row references hash for activation lookup
-  await table.upsertEntity({ partitionKey:'token', rowKey: token, hash, email, createdUtc: pending? pending.createdUtc : now, refreshedUtc: now });
-  await table.upsertEntity({ partitionKey:'pending', rowKey: hash, email, createdUtc: pending? pending.createdUtc : now, token, updatedUtc: now });
-  return context.res = { status:200, body:{ ok:true, status:'pending', token } };
+  try {
+    await table.upsertEntity({ partitionKey:'token', rowKey: token, hash, email, createdUtc: pending? pending.createdUtc : now, refreshedUtc: now });
+    await table.upsertEntity({ partitionKey:'pending', rowKey: hash, email, createdUtc: pending? pending.createdUtc : now, token, updatedUtc: now });
+  } catch(e){
+    return context.res = { status:500, body:{ ok:false, error:'upsert_failed', detail:e.message, code:e.statusCode, stack: debug? e.stack: undefined } };
+  }
+  return context.res = { status:200, body:{ ok:true, status:'pending', token: debug? token: undefined } };
 };
