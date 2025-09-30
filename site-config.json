@@ -48,7 +48,7 @@
       "time": "19:30",
       "description": "Weekly family-friendly halaqa after Maghrib. All are welcome.",
       "image": "img/events-1.jpg",
-      "published": true
+      "published": false
     },
     {
       "id": "community-cleanup-2025-10-19",
@@ -57,7 +57,7 @@
       "time": "09:00",
       "description": "Join volunteers to help clean and beautify our neighborhood. Bring gloves if you have them.",
       "image": "img/events-2.jpg",
-      "published": true
+      "published": false
     },
     {
       "id": "eid-al-adha-2025-06-07",
