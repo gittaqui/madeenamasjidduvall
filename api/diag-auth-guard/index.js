@@ -46,6 +46,7 @@ module.exports = async function(context, req){
     timeUtc: isoNow,
     lastAuthMode,
     secretFallbackPresent,
+    connectionStringSetAt: env.STORAGE_CONNECTION_STRING_SET_AT || null,
     targetDate: targetDateStr,
     afterTarget,
     probe,
