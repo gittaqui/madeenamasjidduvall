@@ -1,2 +1,3 @@
 User-agent: *
-Disallow: /admin-schedule.html
+Allow: /
+Sitemap: https://www.madeenamasjid.com/sitemap.xml
