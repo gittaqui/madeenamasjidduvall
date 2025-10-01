@@ -29,6 +29,24 @@ function checkRateLimit(key) {
 }
 
 module.exports = async function (context, req) {
+  // --- CORS/OPTIONS preflight handling ---
+  const allowedOrigin = 'https://www.madeenamasjid.com';
+  const allowedMethods = 'POST, OPTIONS';
+  const allowedHeaders = 'Content-Type, X-Requested-With';
+  if (req.method === 'OPTIONS') {
+    context.res = {
+      status: 200,
+      headers: {
+        'Access-Control-Allow-Origin': allowedOrigin,
+        'Access-Control-Allow-Methods': allowedMethods,
+        'Access-Control-Allow-Headers': allowedHeaders,
+        'Access-Control-Max-Age': '86400'
+      },
+      body: ''
+    };
+    return;
+  }
+  // --- End CORS/OPTIONS ---
   try {
     const body = req.body || {};
   const name = String(body.name || '').trim();
@@ -39,16 +57,24 @@ module.exports = async function (context, req) {
     const hp = String(body.hp || '').trim(); // honeypot
 
     // Basic validation & limits
+    // Always set CORS headers on all responses
+    function setCors(res) {
+      res.headers = res.headers || {};
+      res.headers['Access-Control-Allow-Origin'] = allowedOrigin;
+    }
     if (hp) {
-      context.res = { status: 200, body: { ok: true } }; // silently ok on bots
+      context.res = { status: 200, body: { ok: true } };
+      setCors(context.res);
       return;
     }
     if (!name || !email || !subject || !message) {
       context.res = { status: 400, body: { error: 'Missing required fields' } };
+      setCors(context.res);
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       context.res = { status: 400, body: { error: 'Invalid email' } };
+      setCors(context.res);
       return;
     }
 
@@ -56,13 +82,19 @@ module.exports = async function (context, req) {
     const maxSubject = Number(process.env.MAX_SUBJECT_LENGTH || 200);
     const maxMessage = Number(process.env.MAX_MESSAGE_LENGTH || 5000);
     if (name.length > maxName) {
-      context.res = { status: 400, body: { error: `Name too long (max ${maxName} chars)` } }; return;
+      context.res = { status: 400, body: { error: `Name too long (max ${maxName} chars)` } };
+      setCors(context.res);
+      return;
     }
     if (subject.length > maxSubject) {
-      context.res = { status: 400, body: { error: `Subject too long (max ${maxSubject} chars)` } }; return;
+      context.res = { status: 400, body: { error: `Subject too long (max ${maxSubject} chars)` } };
+      setCors(context.res);
+      return;
     }
     if (message.length > maxMessage) {
-      context.res = { status: 400, body: { error: `Message too long (max ${maxMessage} chars)` } }; return;
+      context.res = { status: 400, body: { error: `Message too long (max ${maxMessage} chars)` } };
+      setCors(context.res);
+      return;
     }
 
     // Rate limit (per IP + coarse email uniqueness) to deter bursts
@@ -71,6 +103,7 @@ module.exports = async function (context, req) {
     const rateResult = checkRateLimit(rateKey);
     if (rateResult) {
       context.res = { status: 429, headers: { 'Retry-After': String(rateResult.retryAfterSec) }, body: { error: 'Rate limit exceeded', retryAfterSeconds: rateResult.retryAfterSec, limit: rateResult.max } };
+      setCors(context.res);
       return;
     }
 
@@ -110,6 +143,7 @@ module.exports = async function (context, req) {
     let spamTagged = false;
     if (spamScore >= spamReject) {
       context.res = { status: 400, body: { error: 'Rejected as spam', spamScore, reasons: spamReasons } };
+      setCors(context.res);
       return;
     }
     if (spamScore >= spamTag) {
@@ -325,6 +359,7 @@ module.exports = async function (context, req) {
 
     if (!toEmail) {
       context.res = { status: 501, body: { error: 'Email service not configured', setup: 'Set TO_EMAIL and SMTP_* envs.' } };
+      setCors(context.res);
       return;
     }
 
@@ -351,7 +386,8 @@ module.exports = async function (context, req) {
           FROM_EMAIL: process.env.FROM_EMAIL
         }
       }};
-      return;
+  setCors(context.res);
+  return;
     }
 
     // Dispatch by provider
@@ -393,11 +429,13 @@ module.exports = async function (context, req) {
       }
     }
 
-    context.res = { status: 200, body: { ok: true } };
+  context.res = { status: 200, body: { ok: true } };
+  setCors(context.res);
   } catch (e) {
     context.log('send-email error', e);
     const verbose = String(process.env.DEV_VERBOSE || '').toLowerCase() === '1' || String(process.env.NODE_ENV).toLowerCase() !== 'production';
     context.res = { status: 500, body: verbose ? { error: 'Failed to send email', reason: String(e && e.message || e) } : { error: 'Failed to send email' } };
+    setCors(context.res);
   }
 };
 
