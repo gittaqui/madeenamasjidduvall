@@ -1,103 +1,4 @@
-(function(){
-  const MONTH_INPUT = document.getElementById('month');
-  const RANGE_START = document.getElementById('range-start');
-  const RANGE_END = document.getElementById('range-end');
-  const fileInput = document.getElementById('file-input');
-  const btnLoad = document.getElementById('btn-load-json');
-  const btnFetchServer = document.getElementById('btn-fetch-server');
-  const btnFillMonthFromDefaults = document.getElementById('btn-use-defaults');
-  const btnApplyRange = document.getElementById('btn-apply-range');
-  const btnDownload = document.getElementById('btn-download');
-  const btnSaveServer = document.getElementById('btn-save-server');
-  const btnReset = document.getElementById('btn-reset');
-  const btnPrevMonth = document.getElementById('btn-range-prev-month');
-  const btnThisMonth = document.getElementById('btn-range-this-month');
-  const btnNextMonth = document.getElementById('btn-range-next-month');
-  const presetMonthInput = document.getElementById('preset-month');
-  const btnSetMonth = document.getElementById('btn-range-set-month');
-  const authStatusEl = document.getElementById('auth-status');
-
-  let data = {
-    updated: new Date().toISOString().slice(0,10),
-    note: '',
-  sunrise: '', // auto-fetched
-    adhan: {},
-    iqamah: {},
-    jumuah: [],
-    months: {},
-    days: {}
-  };
-
-  function byId(id){ return document.getElementById(id); }
-  function assignFields(){
-    return {
-      sunrise: data.sunrise || '',
-      note: byId('ov-note').value.trim(),
-      adhan: {
-        fajr: byId('ov-adhan-fajr').value.trim(),
-        dhuhr: byId('ov-adhan-dhuhr').value.trim(),
-        asr: byId('ov-adhan-asr').value.trim(),
-        maghrib: byId('ov-adhan-maghrib').value.trim(),
-        isha: byId('ov-adhan-isha').value.trim()
-      },
-      iqamah: {
-        fajr: byId('ov-iqamah-fajr').value.trim(),
-        dhuhr: byId('ov-iqamah-dhuhr').value.trim(),
-        asr: byId('ov-iqamah-asr').value.trim(),
-        maghrib: byId('ov-iqamah-maghrib').value.trim(),
-        isha: byId('ov-iqamah-isha').value.trim()
-      },
-      jumuah: collectJumuah()
-    };
-  }
-  function collectJumuah(){
-    const host = byId('ov-jumuah');
-    return Array.from(host.querySelectorAll('.j-row')).map(row => ({
-      title: row.querySelector('.j-title').value.trim(),
-      start: row.querySelector('.j-start').value.trim(),
-      end: row.querySelector('.j-end').value.trim()
-    })).filter(x => x.title || x.start || x.end);
-  }
-  function addJumuahRow(_prefix, val={}){
-    const host = byId('ov-jumuah');
-    const div = document.createElement('div');
-    div.className = 'j-row d-flex gap-2';
-    div.innerHTML = `
-      <input class="form-control j-title" placeholder="Title (e.g., 1st Jumu'ah)" title="Jumu'ah title" value="${val.title||''}">
-      <input class="form-control j-start" placeholder="Start (e.g., 01:00 PM)" title="Start time" value="${val.start||''}">
-      <input class="form-control j-end" placeholder="End (e.g., 01:45 PM)" title="End time" value="${val.end||''}">
-      <button class="btn btn-outline-danger" type="button">Remove</button>
-    `;
-    div.querySelector('button').addEventListener('click', ()=> div.remove());
-    host.appendChild(div);
-  }
-  function monthBounds(year, monthIdx){
-    const start = new Date(Date.UTC(year, monthIdx, 1));
-    const end = new Date(Date.UTC(year, monthIdx + 1, 0));
-    const toLocalISO = (d)=> new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toISOString().slice(0,10);
-    return { start: toLocalISO(start), end: toLocalISO(end) };
-  }
-  function setRangeTo(year, monthIdx){
-    const { start, end } = monthBounds(year, monthIdx);
-    if(RANGE_START) RANGE_START.value = start;
-    if(RANGE_END) RANGE_END.value = end;
-  }
-  function fillMonthFromDefaults(){
-    // Determine best source for defaults.
-    const isRootEmpty = (()=>{
-      const a = data.adhan||{}; const i = data.iqamah||{};
-      return !Object.values(a).some(v=>v) && !Object.values(i).some(v=>v);
-    })();
-    let source = data; // start with root
-    if(isRootEmpty && data.months){
-      const monthInputKey = (MONTH_INPUT.value||'').trim();
-      const currentKey = (()=>{ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
-      const monthKeys = Object.keys(data.months);
-      if(monthInputKey && data.months[monthInputKey]) source = data.months[monthInputKey];
-      else if(data.months[currentKey]) source = data.months[currentKey];
-      else if(monthKeys.length === 1) source = data.months[monthKeys[0]]; // single override
-    }
-    byId('ov-note').value = source.note || '';
+// Archived: see _archive/schedule-admin.js
     byId('ov-adhan-fajr').value = (source.adhan||{}).fajr || '';
     byId('ov-adhan-dhuhr').value = (source.adhan||{}).dhuhr || '';
     byId('ov-adhan-asr').value = (source.adhan||{}).asr || '';
@@ -205,51 +106,9 @@
       return;
     }
   if(btnSaveServer){ btnSaveServer.disabled = true; btnSaveServer.textContent = 'Saving…'; }
-    try{
-      const resp = await fetch('/api/prayer-times',{
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify(data),
-        credentials: 'include', // ensure auth cookies sent so admin role recognized
-        cache: 'no-store'
-      });
-      if(resp.status === 307 || resp.status === 401){
-        console.warn('[admin] Save POST got', resp.status, 'redirect/auth needed. Attempting role re-check then redirect.');
-        // Re-check principal (maybe cookie missing)
-        await showPrincipalDebug();
-        location.href = '/.auth/login/aad?post_login_redirect_uri=/admin-schedule.html';
-        return;
-      }
-      if(resp.status === 403){
-        const txt = await resp.text();
-        alert('Save blocked: '+txt+'\nIf this is local dev and you want to bypass, set DEV_ALLOW_NON_ADMIN=1 in Functions environment or add admin role.');
-        return;
-      }
-      if(resp.status === 404){
-        alert('Save failed: API endpoint not found. Likely the Functions API has not been deployed yet. Ensure GitHub Action ran successfully or manual deploy completed.');
-        return;
-      }
-      if(resp.status === 405){
-        alert('Save failed: Method not allowed. This often means the API function is missing or not built. Re-deploy the Functions API.');
-        return;
-      }
-      if(resp.status === 503){
-        const txt = await resp.text();
-        alert('Save failed (storage unavailable): ' + txt + '\nCheck storage app settings and managed identity role.');
-        return;
-      }
-      if(!resp.ok){
-        const txt = await resp.text();
-        alert('Save failed ('+resp.status+'): ' + txt);
-        return;
-      }
-      alert('Saved successfully');
-    }catch(err){
-      alert('Save failed: network error (possibly transient). If you were just redirected or lost connectivity, retry.');
-    }
-    finally {
-      if(btnSaveServer){ btnSaveServer.disabled = false; btnSaveServer.textContent = 'Save to Server'; }
-    }
+    // API call removed: update prayer-times.json manually or via static file upload.
+    alert('Prayer times update: please upload or edit prayer-times.json directly.');
+    if(btnSaveServer){ btnSaveServer.disabled = false; btnSaveServer.textContent = 'Save to Server'; }
   }
   async function checkAdminRole(){
     try{
@@ -293,23 +152,16 @@
     }catch{}
   }
   async function fetchFromServer(){
+    // API call removed: load prayer-times.json directly.
     try{
-      const resp = await fetch('/api/prayer-times');
-      if(resp.status === 404){
-        alert('Fetch failed: API endpoint not found. Ensure deployment with managed Functions succeeded.');
-        return;
-      }
-      if(!resp.ok){
-        const txt = await resp.text();
-        alert('Fetch failed ('+resp.status+'): '+txt);
-        return;
-      }
+      const resp = await fetch('prayer-times.json');
+      if(!resp.ok) throw new Error('Failed to load prayer times');
       const obj = await resp.json();
       data = { ...obj };
       // Refresh current month override display
       const key = MONTH_INPUT.value.trim();
       if(key) fillOverride(key);
-      alert('Fetched server copy into editor (remember to Download or Save to Server to persist local edits).');
+      alert('Loaded prayer-times.json into editor.');
     }catch(err){
       alert('Fetch failed: network error');
     }
