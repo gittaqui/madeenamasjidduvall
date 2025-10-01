@@ -1,63 +1,7 @@
-const { getStorageRefs } = require('../shared/blobClient');
-
-async function readBlobJson(blobClient) {
-  const exists = await blobClient.exists();
-  if (!exists) return null;
-  const dl = await blobClient.download();
-  const buf = await streamToBuffer(dl.readableStreamBody);
-  return JSON.parse(buf.toString('utf8'));
-}
-
-async function writeBlobJson(blobClient, obj, context) {
-  const data = Buffer.from(JSON.stringify(obj, null, 2), 'utf8');
-  // Try modern helper first; fall back to older upload method
-  if (typeof blobClient.uploadData === 'function') {
-    return blobClient.uploadData(data, { blobHTTPHeaders: { blobContentType: 'application/json' } });
-  }
-  if (typeof blobClient.upload === 'function') {
-    // upload(data, length, options)
-    return blobClient.upload(data, data.length, { blobHTTPHeaders: { blobContentType: 'application/json' } });
-  }
-  throw new Error('No supported upload method on blobClient');
-}
-
-function parsePrincipal(req){
-  try {
-    const b64 = req.headers['x-ms-client-principal'];
-    if(!b64) return null;
-    return JSON.parse(Buffer.from(b64,'base64').toString('utf8'));
-  } catch { return null; }
-}
-
-function authStatus(req){
-  const principal = parsePrincipal(req);
-  const roles = (principal && principal.userRoles) || [];
-  const isAuthenticated = !!principal;
-  const isAdmin = roles.includes('admin') || (process.env.DEV_ALLOW_NON_ADMIN === '1' && roles.includes('authenticated'));
-  return { principal, roles, isAuthenticated, isAdmin };
-}
-
-async function streamToBuffer(readable) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    readable.on('data', (d) => chunks.push(Buffer.from(d)));
-    readable.on('end', () => resolve(Buffer.concat(chunks)));
-    readable.on('error', reject);
-  });
-}
-
-module.exports = async function (context, req) {
-  const method = (req.method || 'GET').toUpperCase();
-  // Attempt to initialize blob client; allow fallback if storage not configured
-  let storage = null;
-  try {
-    storage = getStorageRefs();
-  } catch (e) {
-    context.log('Blob client initialization failed (will use local fallback if possible):', e.message);
-  }
-
-  if (method === 'GET') {
-    try {
+// This function has been archived. See _archive/prayer-times/ for the original code and data.
+module.exports = async function(context, req) {
+  context.res = { status: 410, body: { error: 'This endpoint is archived. No longer available.' } };
+};
       let json = null;
     if (storage && storage.blobClient) {
         try {
