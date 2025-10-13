@@ -1,24 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://www.madeenamasjid.com/</loc>
+    <loc>https://www.duvall.madeenamasjid.com/</loc>
+  </url>
+    <url>
+    <loc>https://www.duvall.madeenamasjid.com/inex.html</loc>
   </url>
   <url>
-    <loc>https://www.madeenamasjid.com/about.html</loc>
+    <loc>https://www.duvall.madeenamasjid.com/about.html</loc>
   </url>
   <url>
-    <loc>https://www.madeenamasjid.com/contact.html</loc>
+    <loc>https://www.duvall.madeenamasjid.com/contact.html</loc>
   </url>
   <url>
-    <loc>https://www.madeenamasjid.com/islam-101.html</loc>
+    <loc>https://www.duvall.madeenamasjid.com/islam-101.html</loc>
   </url>
   <url>
-    <loc>https://www.madeenamasjid.com/looking-for-peace.html</loc>
+    <loc>https://www.duvall.madeenamasjid.com/looking-for-peace.html</loc>
   </url>
   <url>
-    <loc>https://www.madeenamasjid.com/event.html</loc>
+    <loc>https://www.duvall.madeenamasjid.com/event.html</loc>
   </url>
   <url>
-    <loc>https://www.madeenamasjid.com/event-detail.html</loc>
+    <loc>https://www.duvall.madeenamasjid.com/event-detail.html</loc>
   </url>
 </urlset>
